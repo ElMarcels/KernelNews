@@ -329,9 +329,18 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="mb-1 block text-[12px] font-semibold text-black/60">Categoría</label>
-          <select id="fCategory"
+          <select id="fCategory" onchange="repopulateSubcategoryOptions()"
             class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"></select>
         </div>
+        <div>
+          <label class="mb-1 block text-[12px] font-semibold text-black/60">Subtema (opcional)</label>
+          <select id="fSubtopic"
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]">
+            <option value="">— Ninguno —</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="mb-1 block text-[12px] font-semibold text-black/60">Minutos de lectura</label>
           <input id="fMinutes" type="number" min="1" value="5"
@@ -872,13 +881,14 @@
       const title = document.getElementById("fTitle").value.trim();
       const content = document.getElementById("fContent").value;
       const category = (document.getElementById("fCategory") || {}).value || "";
+      const subtopic = (document.getElementById("fSubtopic") || {}).value || "";
       const minutes = parseInt((document.getElementById("fMinutes") || {}).value) || 5;
       const image = (document.getElementById("fImage") || {}).value || "";
       const excerpt = (document.getElementById("fExcerpt") || {}).value || "";
       const featured = !!(document.getElementById("fFeatured") || {}).checked;
       const editId = parseInt(document.getElementById("fId").value) || 0;
       const draftObj = {
-        id: editId || "draft-" + Date.now(), title, content, category, minutes, image, excerpt, featured,
+        id: editId || "draft-" + Date.now(), title, content, category, subtopic, minutes, image, excerpt, featured,
         draft: true, autosavedAt: Date.now()
       };
       try { localStorage.setItem("kernelnews_draft", JSON.stringify(draftObj)); } catch (e) {}
@@ -902,6 +912,8 @@
     document.getElementById("fTitle").value = d.title || "";
     fillCategoryOptions();
     document.getElementById("fCategory").value = d.category || topicName(topics[0]);
+    repopulateSubcategoryOptions();
+    document.getElementById("fSubtopic").value = d.subtopic || "";
     document.getElementById("fMinutes").value = d.minutes || 5;
     document.getElementById("fImage").value = d.image || "";
     document.getElementById("fExcerpt").value = d.excerpt || "";
@@ -1021,6 +1033,7 @@
     persistLocalCache();
     renderTopics();
     fillCategoryOptions();
+    repopulateSubcategoryOptions();
     renderNews();
     renderEventsSection();
     renderAdmin();
@@ -1044,7 +1057,7 @@
       // Fallback: usar caché local
       news = loadLSnews(); topics = loadLStopics(); events = loadLSevents();
       persistLocalCache();
-      renderTopics(); fillCategoryOptions(); renderNews(); renderEventsSection(); renderAdmin();
+      renderTopics(); fillCategoryOptions(); repopulateSubcategoryOptions(); renderNews(); renderEventsSection(); renderAdmin();
       return false;
     }
   }
@@ -1145,6 +1158,19 @@
     fillCategoryOptions();
     const sel = document.getElementById("fCategory");
     if (sel && topics.length) sel.value = topics[0];
+    repopulateSubcategoryOptions();
+  }
+  function repopulateSubcategoryOptions() {
+    const catSel = document.getElementById("fCategory");
+    const subSel = document.getElementById("fSubtopic");
+    if (!subSel) return;
+    const prev = subSel.value;
+    const catName = (catSel && catSel.value) || (topics[0] ? topicName(topics[0]) : "");
+    const topic = topics.find(x => topicName(x) === catName);
+    const subs = (topic && Array.isArray(topic.subtopics)) ? topic.subtopics : [];
+    subSel.innerHTML = `<option value="">— Ninguno —</option>` + subs.map(s =>
+      `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join("");
+    if (subs.includes(prev)) subSel.value = prev;
   }
 
   function escapeAttr(s) { return s.replace(/['"]/g, ""); }
@@ -1883,6 +1909,7 @@
     closeTopicEdit();
     renderTopics();
     fillCategoryOptions();
+    repopulateSubcategoryOptions();
     renderTopicsModal();
     if (activeTopic === oldName) { activeTopic = name; setTopic(name); }
     else { setSection(activeSection || "noticias"); }
@@ -1899,6 +1926,7 @@
     document.getElementById("newTopicIcon").value = "fa-solid fa-";
     renderTopics();
     fillCategoryOptions();
+    repopulateSubcategoryOptions();
     renderTopicsModal();
   }
   function removeTopic(name) {
@@ -1907,6 +1935,7 @@
       persistTopics();
       renderTopics();
       fillCategoryOptions();
+      repopulateSubcategoryOptions();
       renderTopicsModal();
       if (activeTopic === name) { activeTopic = ""; setSection("noticias"); }
     }, { title: "Eliminar tema" });
@@ -1989,6 +2018,8 @@
     document.getElementById("fTitle").value = n.title;
     fillCategoryOptions();
     document.getElementById("fCategory").value = topics.some(x => topicName(x) === n.category) ? n.category : topicName(topics[0]);
+    repopulateSubcategoryOptions();
+    document.getElementById("fSubtopic").value = n.subtopic || "";
     document.getElementById("fMinutes").value = n.minutes || 5;
     document.getElementById("fImage").value = n.image || "";
     document.getElementById("fExcerpt").value = n.excerpt || "";
@@ -2007,6 +2038,7 @@
     e.preventDefault();
     const title = document.getElementById("fTitle").value.trim();
     const category = document.getElementById("fCategory").value;
+    const subtopic = document.getElementById("fSubtopic").value || "";
     const minutes = parseInt(document.getElementById("fMinutes").value) || 5;
     const image = document.getElementById("fImage").value.trim()
       || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=900&q=80";
@@ -2018,7 +2050,7 @@
     if (editId) {
       const idx = news.findIndex(x => x.id === editId);
       if (idx === -1) return;
-      news[idx] = { ...news[idx], title, category, minutes, image, excerpt, content, featured };
+      news[idx] = { ...news[idx], title, category, subtopic, minutes, image, excerpt, content, featured };
       persistAll();
       closeCreateModal();
       if (activeSection === "descubrir") renderNews();
@@ -2026,7 +2058,7 @@
       return;
     }
 
-    news.unshift({ id: Date.now(), title, category, minutes, date: "Recién publicado", excerpt, content, image, featured });
+    news.unshift({ id: Date.now(), title, category, subtopic, minutes, date: "Recién publicado", excerpt, content, image, featured });
     clearDraft();
     persistAll();
     closeCreateModal();
