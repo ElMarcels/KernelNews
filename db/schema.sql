@@ -19,6 +19,7 @@ create table if not exists temas (
   name text unique not null,
   icon text default '',
   orden int default 0,
+  subtopics jsonb default '[]'::jsonb,
   created_at timestamptz default now()
 );
 
