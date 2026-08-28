@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KernelNews · Noticias de Apple Developer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+  :root {
+    --apple-blue: #0071E3;
+    --apple-accent: #2997ff;
+    --sidebar-bg: rgba(246, 246, 246, 0.72);
+    --ink: #1d1d1f;
+    --muted: #86868b;
+  }
+
+  * { -webkit-font-smoothing: antialiased; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+      "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: #f5f5f7;
+  }
+
+  /* Frosted glass sidebar */
+  .sidebar-glass {
+    background: var(--sidebar-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  /* macOS window controls */
+  .window-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    display: inline-block;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 9999px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+
+  .hero-gradient {
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.72) 100%);
+  }
+
+  .news-row { transition: background-color .18s ease, transform .18s ease; }
+  .news-row:hover { background: #f5f5f7; }
+  .news-row:hover .chev-ico { opacity: 1; transform: translateX(2px); }
+  .chev-ico { opacity: .3; transition: all .18s ease; }
+
+  .nav-item {
+    transition: background-color .15s ease, color .15s ease;
+  }
+
+  .active-pill {
+    background: var(--apple-blue) !important;
+    color: #ffffff !important;
+  }
+
+  .show { animation: fadeUp .35s ease; }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: none;} }
+
+  .modal-backdrop { background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+
+  /* Markdown rendered content */
+  .md-body { line-height: 1.7; }
+  .md-body h1, .md-body h2, .md-body h3 { font-weight: 700; color: #1d1d1f; margin-top: 1.25em; margin-bottom: .5em; letter-spacing: -.01em; }
+  .md-body h1 { font-size: 1.5rem; } .md-body h2 { font-size: 1.3rem; } .md-body h3 { font-size: 1.1rem; }
+  .md-body p { margin: .75em 0; }
+  .md-body a { color: #0071E3; text-decoration: underline; text-underline-offset: 2px; }
+  .md-body ul, .md-body ol { margin: .75em 0; padding-left: 1.4em; }
+  .md-body ul { list-style: disc; } .md-body ol { list-style: decimal; }
+  .md-body li { margin: .3em 0; }
+  .md-body code {
+    background: #f2f2f7; border-radius: 5px; padding: .15em .4em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; color: #c0392b;
+  }
+  .md-body pre { background: #1d1d1f; color: #f5f5f7; border-radius: 10px; padding: 1em; overflow-x: auto; margin: 1em 0; }
+  .md-body pre code { background: transparent; color: inherit; padding: 0; }
+  .md-body blockquote {
+    border-left: 3px solid #0071E3; background: #f5f5f7; border-radius: 0 8px 8px 0;
+    padding: .75em 1em; margin: 1em 0; color: #515154;
+  }
+  .md-body blockquote p { margin: 0; }
+  .md-body strong { font-weight: 700; }
+  .md-body img { border-radius: 10px; margin: 1em 0; max-width: 100%; }
+  .md-body hr { border: none; border-top: 1px solid #e3e3e6; margin: 1.5em 0; }
+</style>
+</head>
+<body>
+
+<div class="flex h-screen w-screen overflow-hidden">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside id="sidebar"
+    class="sidebar-glass flex h-full w-[280px] shrink-0 flex-col border-r border-black/[0.08] select-none">
+
+    <!-- macOS window controls -->
+    <div class="flex items-center gap-2 px-5 pt-4">
+      <span class="window-dot bg-[#ff5f57]"></span>
+      <span class="window-dot bg-[#febc2e]"></span>
+      <span class="window-dot bg-[#28c840]"></span>
+      <span class="ml-auto text-[10px] font-medium tracking-wide text-black/30">KernelNews</span>
+    </div>
+
+    <!-- Brand -->
+    <div class="flex items-center gap-2.5 px-5 pt-5">
+      <div class="grid h-10 w-10 place-items-center rounded-xl bg-black text-white shadow-sm">
+        <i data-lucide="cpu" class="h-5 w-5"></i>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[22px] font-semibold tracking-tight text-[#1d1d1f]">KernelNews</span>
+        <span class="mt-1 rounded-full bg-[#0071E3]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#0071E3]">β</span>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="px-5 pt-4">
+      <div class="flex items-center gap-2 rounded-full bg-black/[0.06] px-3.5 py-2 text-[13px] text-black/50">
+        <i data-lucide="search" class="h-4 w-4"></i>
+        <input id="searchInput" type="text" placeholder="Buscar noticias"
+          class="w-full bg-transparent outline-none placeholder:text-black/40" />
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="scrollbar-thin mt-2 flex-1 overflow-y-auto px-3 pb-2">
+      <p class="px-3 pb-1.5 pt-3 text-[11px] font-semibold uppercase tracking-wide text-black/40">Explorar</p>
+      <button data-id="descubrir" onclick="setSection('descubrir')"
+        class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
+        <i data-lucide="compass" class="h-[18px] w-[18px]"></i> Descubrir
+      </button>
+      <button data-id="noticias" onclick="setSection('noticias')"
+        class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
+        <i data-lucide="newspaper" class="h-[18px] w-[18px]"></i> Noticias
+      </button>
+      <button data-id="marcadores" onclick="setSection('marcadores')"
+        class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
+        <i data-lucide="bookmark" class="h-[18px] w-[18px]"></i> Marcadores
+      </button>
+      <button data-id="eventos" onclick="setSection('eventos')"
+        class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
+        <i data-lucide="calendar" class="h-[18px] w-[18px]"></i> Eventos
+      </button>
+
+      <p class="px-3 pb-1.5 pt-4 text-[11px] font-semibold uppercase tracking-wide text-black/40">Temas</p>
+
+      <div id="topicsList" class="space-y-0.5"></div>
+    </nav>
+
+    <!-- Profile / Auth -->
+    <div class="border-t border-black/[0.08] p-3">
+      <div id="authPanel" class="flex items-center gap-3 rounded-xl p-2 transition hover:bg-black/[0.05] cursor-pointer"
+        onclick="handleAuthClick()" title="Iniciar sesión">
+        <div id="authAvatar"
+          class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#0071E3] to-[#2997ff] text-white">
+          <i data-lucide="user" class="h-5 w-5"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p id="authName" class="truncate text-[14px] font-semibold text-[#1d1d1f]">Mi Cuenta</p>
+          <p id="authRole" class="truncate text-[12px] text-black/50">Iniciar sesión</p>
+        </div>
+        <i data-lucide="log-in" id="authIcon" class="h-4 w-4 text-black/40"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="relative flex h-full flex-1 flex-col overflow-y-auto bg-[#f5f5f7]">
+
+    <!-- Admin banner -->
+    <div id="adminBanner" class="hidden items-center justify-between gap-4 border-b border-[#0071E3]/20 bg-[#0071E3]/[0.06] px-6 py-2.5 show">
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-[13px] font-medium text-[#1d1d1f]">
+          <i data-lucide="shield-check" class="h-4 w-4 text-[#0071E3]"></i>
+          <span>Panel de Control</span>
+        </div>
+        <nav class="flex items-center gap-1" id="adminTabs">
+          <button onclick="openAdmin('noticias')" data-admin="noticias"
+            class="rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-black/50 hover:bg-black/[0.05]">Noticias</button>
+          <button onclick="openAdmin('temas')" data-admin="temas"
+            class="rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-black/50 hover:bg-black/[0.05]">Temas</button>
+          <button onclick="openAdmin('eventos')" data-admin="eventos"
+            class="rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-black/50 hover:bg-black/[0.05]">Eventos</button>
+          <button onclick="openAdmin('ajustes')" data-admin="ajustes"
+            class="rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-black/50 hover:bg-black/[0.05]">Ajustes</button>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openCreateModal()"
+          class="flex items-center gap-1.5 rounded-full bg-[#0071E3] px-4 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:bg-[#0077ED]">
+          <i data-lucide="plus" class="h-3.5 w-3.5"></i> Crear Noticia
+        </button>
+      </div>
+    </div>
+
+    <div class="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
+
+      <!-- Header -->
+      <div class="mb-6 flex items-end justify-between">
+        <div>
+          <p class="text-[13px] font-medium text-[#0071E3]">KernelNews</p>
+          <h1 id="mainTitle" class="text-[34px] font-bold leading-tight tracking-tight text-[#1d1d1f]">Descubrir</h1>
+          <p id="mainSubtitle" class="mt-1 text-[14px] text-black/50">Lo último del ecosistema Apple Developer.</p>
+        </div>
+        <div class="hidden items-center gap-2 sm:flex">
+          <span class="rounded-full bg-black/[0.06] px-3 py-1.5 text-[12px] font-medium text-black/60">
+            <span id="newsCount">0</span> noticias
+          </span>
+        </div>
+      </div>
+
+      <!-- Hero -->
+      <div id="heroSection" class="show">
+        <div class="relative h-[320px] cursor-pointer overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5"
+          onclick="openArticle(0)">
+          <img id="heroImage" src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80"
+            alt="" class="h-full w-full object-cover" />
+          <div class="hero-gradient absolute inset-0"></div>
+          <div class="absolute inset-x-0 bottom-0 p-7">
+            <span id="heroTag" class="mb-2 inline-block rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur">Destacado</span>
+            <h2 id="heroTitle" class="max-w-xl text-[30px] font-bold leading-tight text-white">El núcleo de Swift 6: rendimiento y seguridad modernos</h2>
+            <p id="heroExcerpt" class="mt-2 max-w-lg text-[14px] leading-relaxed text-white/80">Exploramos las mejoras de concurrencia y el nuevo modelo de referencia estricto que llegan a las APIs de Apple.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- News grid -->
+      <div id="newsList" class="mt-8 space-y-1.5"></div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="hidden py-24 text-center">
+        <div class="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-black/[0.05]">
+          <i data-lucide="bookmark-x" class="h-6 w-6 text-black/40"></i>
+        </div>
+        <p class="text-[15px] font-semibold text-[#1d1d1f]">Sin noticias aún</p>
+        <p class="text-[13px] text-black/50">No hay resultados para esta búsqueda o categoría.</p>
+      </div>
+
+      <div class="mt-10 pb-4 text-center text-[12px] text-black/35">
+        KernelNews &copy; 2026 · Inspirado en el sistema de diseño Human Interface Guidelines de Apple.
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= CREATE NEWS MODAL ================= -->
+<div id="createModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeCreateModal()"></div>
+  <div class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 id="createModalTitle" class="text-[20px] font-bold text-[#1d1d1f]">Crear Noticia</h3>
+      <button onclick="closeCreateModal()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <form id="createForm" class="mt-5 space-y-4" onsubmit="submitNewStory(event)">
+      <input type="hidden" id="fId" />
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">Título</label>
+        <input id="fTitle" required
+          class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20"
+          placeholder="Título de la noticia" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="mb-1 block text-[12px] font-semibold text-black/60">Categoría</label>
+          <select id="fCategory"
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"></select>
+        </div>
+        <div>
+          <label class="mb-1 block text-[12px] font-semibold text-black/60">Minutos de lectura</label>
+          <input id="fMinutes" type="number" min="1" value="5"
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]" />
+        </div>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">URL de imagen (opcional)</label>
+        <input id="fImage"
+          class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+          placeholder="https://..." />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">Extracto / descripción</label>
+        <textarea id="fExcerpt" rows="2"
+          class="w-full resize-none rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+          placeholder="Breve resumen de la noticia..."></textarea>
+      </div>
+      <div>
+        <div class="mb-1 flex items-center justify-between">
+          <label class="block text-[12px] font-semibold text-black/60">Contenido (Markdown)</label>
+          <span class="text-[11px] text-black/35"># encabezados · **negrita** · `código` · listas</span>
+        </div>
+        <textarea id="fContent" rows="8"
+          class="w-full resize-y rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 font-mono text-[13px] leading-relaxed outline-none focus:border-[#0071E3]"
+          placeholder="Escribe el artículo en Markdown...&#10;&#10;## Subtítulo&#10;Párrafo con **negrita** y [enlaces](https://).&#10;&#10;- Punto uno&#10;- Punto dos"></textarea>
+        <div class="mt-1.5 flex items-center justify-end gap-1 text-[18px]">
+          <button type="button" onclick="mdToolbar('**','**','fContent',true)" title="Negrita" class="grid h-7 w-7 place-items-center rounded hover:bg-black/[0.05]"><b>B</b></button>
+          <button type="button" onclick="mdToolbar('*','*','fContent',true)" title="Cursiva" class="grid h-7 w-7 place-items-center rounded italic hover:bg-black/[0.05]"><i>I</i></button>
+          <button type="button" onclick="mdToolbar('`','`','fContent',true)" title="Código" class="grid h-7 w-7 place-items-center rounded font-mono text-[13px] hover:bg-black/[0.05]">&lt;/&gt;</button>
+          <button type="button" onclick="mdToolbar('\\n- ','','fContent',false)" title="Lista" class="grid h-7 w-7 place-items-center rounded hover:bg-black/[0.05]">•≡</button>
+          <button type="button" onclick="mdToolbar('## ','','fContent',false)" title="Encabezado" class="grid h-7 w-7 place-items-center rounded font-bold text-[13px] hover:bg-black/[0.05]">H</button>
+          <button type="button" onclick="mdToolbar('> ','','fContent',false)" title="Cita" class="grid h-7 w-7 place-items-center rounded hover:bg-black/[0.05]">❝</button>
+        </div>
+      </div>
+      <div>
+        <label class="mb-1 flex items-center gap-2 text-[12px] font-semibold text-black/60">
+          <input id="fFeatured" type="checkbox" class="h-4 w-4 accent-[#0071E3]" />
+          Destacar en la portada (Hero)
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeCreateModal()"
+          class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Cancelar</button>
+        <button type="submit"
+          <button type="submit" id="createModalSubmit"
+          class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Publicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= SETTINGS (OAuth) MODAL ================= -->
+<div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeSettings()"></div>
+  <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 class="text-[20px] font-bold text-[#1d1d1f]">Configuración del Administrador</h3>
+      <button onclick="closeSettings()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <div class="mt-4 rounded-xl bg-[#f5f5f7] p-4 text-[13px] leading-relaxed text-black/70">
+      <p class="mb-2 font-semibold text-[#1d1d1f]">Autenticación GitHub OAuth</p>
+      <p>Para activar el panel de control en producción, configura un GitHub OAuth App y añade tus <code class="rounded bg-black/[0.06] px-1 text-[12px]">GITHUB_CLIENT_ID</code> y <code class="rounded bg-black/[0.06] px-1 text-[12px]">GITHUB_CLIENT_SECRET</code> como variables de entorno en Vercel, con callback a <code class="rounded bg-black/[0.06] px-1 text-[12px]">/api/auth</code>.</p>
+    </div>
+    <p class="mt-4 text-[12px] text-black/45">El usuario administrador está definido como <code class="rounded bg-black/[0.06] px-1 text-[12px]">@<span id="adminUsername"></span></code>.</p>
+    <div class="mt-5 flex justify-end">
+      <button onclick="closeSettings()" class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= LOGIN MODAL ================= -->
+<div id="loginModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeLogin()"></div>
+  <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 class="text-[20px] font-bold text-[#1d1d1f]">Iniciar sesión</h3>
+      <button onclick="closeLogin()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <p class="mt-1 text-[13px] text-black/50">Introduce tu nombre de usuario de GitHub (simulación del OAuth).</p>
+    <form class="mt-5 space-y-4" onsubmit="handleLogin(event)">
+      <input id="loginUsername" required
+        class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/20"
+        placeholder="usuario de GitHub" autocomplete="username" />
+      <button type="submit"
+        class="w-full rounded-full bg-[#1d1d1f] py-2.5 text-[14px] font-semibold text-white hover:bg-black">
+        <i data-lucide="github" class="mr-1.5 inline h-4 w-4 align-[-2px]"></i> Continuar con GitHub
+      </button>
+    </form>
+    <button onclick="startGitHubOAuth()"
+      class="mt-2 w-full rounded-full py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">
+      ¿Tienes OAuth configurado? Conectar con GitHub
+    </button>
+  </div>
+</div>
+
+<!-- ================= TOPICS MODAL ================= -->
+<div id="topicsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeTopicsModal()"></div>
+  <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 class="text-[20px] font-bold text-[#1d1d1f]">Gestionar Temas</h3>
+      <button onclick="closeTopicsModal()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <div class="mt-4 rounded-xl bg-[#f5f5f7] p-3.5">
+      <p class="mb-2 text-[12px] font-semibold text-black/60">Nuevo tema</p>
+      <input id="newTopicInput" placeholder="Nombre del tema..."
+        class="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-[14px] outline-none focus:border-[#0071E3]"
+        onkeydown="if(event.key==='Enter'){addTopic()}" />
+      <div class="mt-2 flex items-center gap-2">
+        <div class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-black/50">
+          <i id="newTopicPreview" class="fa-solid fa-tag"></i>
+        </div>
+        <input id="newTopicIcon" value="fa-solid fa-tag" placeholder="Clase Font Awesome (fa-solid fa-...)"
+          class="w-full rounded-lg border border-black/10 bg-white px-3 py-2 font-mono text-[12px] outline-none focus:border-[#0071E3]"
+          oninput="updateTopicPreview()" onkeydown="if(event.key==='Enter'){addTopic()}" />
+      </div>
+      <p class="mt-2 text-[11px] leading-relaxed text-black/40">Pega la clase del icono de <a href="https://fontawesome.com/icons" target="_blank" rel="noopener" class="text-[#0071E3]">Font Awesome</a>. Ej.: <code class="text-[10px]">fa-brands fa-swift</code>, <code class="text-[10px]">fa-solid fa-brain</code>.</p>
+      <button onclick="addTopic()"
+        class="mt-2.5 w-full rounded-lg bg-[#0071E3] py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Añadir Tema</button>
+    </div>
+
+    <div id="topicsManageList" class="scrollbar-thin mt-3 max-h-72 space-y-1.5 overflow-y-auto"></div>
+  </div>
+</div>
+
+<!-- ================= EDIT TOPIC MODAL ================= -->
+<div id="editTopicModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeTopicEdit()"></div>
+  <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 class="text-[20px] font-bold text-[#1d1d1f]">Editar Tema</h3>
+      <button onclick="closeTopicEdit()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <input type="hidden" id="editTopicOrig" />
+    <div class="mt-4 space-y-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">Nombre</label>
+        <input id="editTopicName"
+          class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2 text-[14px] outline-none focus:border-[#0071E3]" />
+      </div>
+      <div>
+        <label class="mb-1 flex items-center gap-2 text-[12px] font-semibold text-black/60">Icono Font Awesome
+          <span class="rounded bg-[#0071E3]/10 px-1.5 py-0.5 text-[10px] text-[#0071E3]" id="editTopicPreviewText"></span>
+        </label>
+        <div class="flex items-center gap-2">
+          <div class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#f5f5f7] text-black/50">
+            <i id="editTopicPreview" class="fa-solid fa-tag"></i>
+          </div>
+          <input id="editTopicIcon"
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2 font-mono text-[12px] outline-none focus:border-[#0071E3]"
+            oninput="updateEditTopicPreview()" />
+        </div>
+      </div>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button onclick="closeTopicEdit()"
+        class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Cancelar</button>
+      <button onclick="saveTopicEdit()"
+        class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EVENTS MODAL ================= -->
+<div id="eventsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeEventsModal()"></div>
+  <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 class="text-[20px] font-bold text-[#1d1d1f]">Gestionar Eventos</h3>
+      <button onclick="closeEventsModal()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <button onclick="openCreateEventModal()"
+      class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#0071E3]/30 bg-[#0071E3]/[0.04] py-2.5 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">
+      <i data-lucide="plus" class="h-4 w-4"></i> Añadir Evento
+    </button>
+    <div id="eventsList" class="scrollbar-thin mt-3 max-h-80 space-y-1.5 overflow-y-auto"></div>
+  </div>
+</div>
+
+<!-- ================= CREATE EVENT MODAL ================= -->
+<div id="createEventModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeCreateEventModal()"></div>
+  <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 class="text-[20px] font-bold text-[#1d1d1f]">Añadir Evento</h3>
+      <button onclick="closeCreateEventModal()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <form id="eventForm" class="mt-5 space-y-4" onsubmit="submitNewEvent(event)">
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">Título</label>
+        <input id="evTitleInp" required
+          class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+          placeholder="Ej. Taller de SwiftUI" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="mb-1 block text-[12px] font-semibold text-black/60">Fecha</label>
+          <input id="evDateInp" type="date" required
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]" />
+        </div>
+        <div>
+          <label class="mb-1 block text-[12px] font-semibold text-black/60">Hora</label>
+          <input id="evTimeInp" type="time" required
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]" />
+        </div>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">Ubicación</label>
+        <input id="evLocInp" required
+          class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+          placeholder="Ej. En línea / Cupertino, CA" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="mb-1 block text-[12px] font-semibold text-black/60">Tipo</label>
+          <input id="evTypeInp" value="Evento"
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+            placeholder="Conferencia, Taller..." />
+        </div>
+        <div>
+          <label class="mb-1 block text-[12px] font-semibold text-black/60">Imagen (URL)</label>
+          <input id="evImgInp"
+            class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+            placeholder="https://..." />
+        </div>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">Descripción</label>
+        <textarea id="evDescInp" rows="3"
+          class="w-full resize-none rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+          placeholder="Detalles del evento..."></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeCreateEventModal()"
+          class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Cancelar</button>
+        <button type="submit"
+          class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Crear Evento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= CONFIRM / ALERT MODAL ================= -->
+<div id="confirmModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="cancelConfirm()"></div>
+  <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl show">
+    <div id="confirmIconWrap" class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-red-50 text-red-500">
+      <i data-lucide="alert-triangle" class="h-6 w-6"></i>
+    </div>
+    <h3 id="confirmTitle" class="mt-4 text-center text-[18px] font-bold text-[#1d1d1f]">Confirmar</h3>
+    <p id="confirmMessage" class="mt-1.5 text-center text-[13px] leading-relaxed text-black/60"></p>
+    <div class="mt-5 grid grid-cols-2 gap-2">
+      <button id="confirmCancelBtn" onclick="cancelConfirm()"
+        class="rounded-full border border-black/10 py-2.5 text-[13px] font-semibold text-[#1d1d1f] hover:bg-black/[0.04]">Cancelar</button>
+      <button id="confirmOkBtn" onclick="runConfirm()"
+        class="rounded-full bg-red-500 py-2.5 text-[13px] font-semibold text-white hover:bg-red-600">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  CONFIGURACIÓN
+  // ============================================================
+  const ADMIN_GITHUB_USERNAME = "ElMarcels";
+
+  // En producción, establece la URL de tu backend/servidorless de OAuth.
+  const GITHUB_OAUTH_ENDPOINT = ""; // p. ej. "https://tudominio.vercel.app/api/auth"
+
+  // ============================================================
+  //  DATOS
+  // ============================================================
+  const defaultTopics = [
+    { name: "Accesibilidad", icon: "fa-solid fa-universal-access" },
+    { name: "AI y Aprendizaje", icon: "fa-solid fa-brain" },
+    { name: "Desarrollo Web", icon: "fa-solid fa-code" },
+    { name: "Seguridad", icon: "fa-solid fa-shield-halved" },
+    { name: "Swift & SwiftUI", icon: "fa-brands fa-swift" },
+    { name: "Xcode y Metal", icon: "fa-solid fa-microchip" },
+    { name: "App Store", icon: "fa-solid fa-store" }
+  ];
+
+  const seedEvents = [
+    { id: 1, title: "WWDC KernelNews 2026", date: "2026-06-08", location: "Cupertino, CA", description: "La keynote anual con los anuncios de software y plataformas de Apple, en directo con la comunidad.", image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900&q=80", type: "Conferencia", time: "10:00" },
+    { id: 2, title: "Taller: Swift Data en profundidad", date: "2026-04-14", location: "En línea", description: "Workshop práctico sobre modelos de datos con Swift Data, migraciones y observación.", image: "https://images.unsplash.com/photo-1526925539332-aa3b66e35444?w=900&q=80", type: "Taller", time: "17:00" },
+    { id: 3, title: "Meetup de Unity en Metal", date: "2026-05-03", location: "Barcelona, ES", description: "Encuentro local para compartir técnicas de renderizado y optimización gráfica.", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=900&q=80", type: "Meetup", time: "19:30" }
+  ];
+
+  const seedNews = [
+    {
+      id: 1,
+      title: "El núcleo de Swift 6: rendimiento y seguridad modernos",
+      category: "Swift & SwiftUI",
+      minutes: 8,
+      date: "Hoy",
+      excerpt: "Exploramos las mejoras de concurrencia y el nuevo modelo de referencia estricto que llegan a las APIs de Apple.",
+      content: "Swift 6 introduce el **aislamiento de datos por defecto**, lo que elimina toda una clase de carreras de datos en tiempo de compilación.\n\n## Cambios principales\n\n- El compilador aplica `Sendable` de forma estricta.\n- Nuevo runtime de concurrencia bajo `Swift Concurrency`.\n- Migración asistida con `swift migrate`.\n\n> El objetivo es que los errores de concurrencia sean **imposibles** de compilar, no solo difíciles de encontrar.\n\n### Ejemplo\n\n```swift\nfunc fetchUsers() async throws -> [User] {\n    let data = try await apiClient.get(\"/users\")\n    return try JSONDecoder().decode([User].self, from: data)\n}\n```\n\nPuedes seguir la [documentación oficial de Swift](https://swift.org).",
+      image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80",
+      featured: true
+    },
+    { id: 2, title: "SwiftUI borra el lienzo: Layout v2 llega a iPadOS", category: "Swift & SwiftUI", minutes: 6, date: "Hoy",
+      excerpt: "Los nuevos protocolos de layout ofrecen composición declarativa con renderizado diferido sobre el Metal posterior.", image: "https://images.unsplash.com/photo-1554435493-93422e8220c8?w=900&q=80" },
+    { id: 3, title: "Vision Pro: metaprogramación espacial con OSLog", category: "Xcode y Metal", minutes: 5, date: "Ayer",
+      excerpt: "Cómo instrumentar experiencias de realidad mixta para depurar el rendimiento fotograma a fotograma.", image: "https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=900&q=80" },
+    { id: 4, title: "App Store Connect renueva su API de métricas", category: "App Store", minutes: 4, date: "Ayer",
+      excerpt: "Nuevos endpoints para seguimiento de conversión, retención y adquisición bajo una sola firma.", image: "https://images.unsplash.com/photo-1512941937669-90ce1c58e47e?w=900&q=80" },
+    { id: 5, title: "Privacidad en el núcleo: clave pública no ampliable por diseño", category: "Seguridad", minutes: 7, date: "Hace 2 días",
+      excerpt: "Analizamos el nuevo modelo de atestación del enclave seguro y sus implicaciones para los desarrolladores.", image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&q=80" },
+    { id: 6, title: "AccessibilityTree: audita tu app con una línea de librería", category: "Accesibilidad", minutes: 3, date: "Hace 2 días",
+      excerpt: "El marco de pruebas automatizadas ahora incluye reglas de accesibilidad integradas en XCTest.", image: "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=900&q=80" },
+    { id: 7, title: "Core ML 7: modelos on-device que aprenden en tiempo real", category: "AI y Aprendizaje", minutes: 9, date: "Hace 3 días",
+      excerpt: "El nuevo runtime permite actualizaciones incrementales de pesos sin recompilar el modelo.", image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=900&q=80" },
+    { id: 8, title: "Safari 19: APIs web para realidad aumentada llamativa", category: "Desarrollo Web", minutes: 6, date: "Hace 3 días",
+      excerpt: "Llegan nuevos WebGL, WebGPU y WebXR detrás de flags experimentales modernos.", image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=900&q=80" }
+  ];
+
+  // ============================================================
+  //  ESTADO
+  // ============================================================
+  let news = loadNews();
+  let currentUser = null;      // { username, role }
+  let activeSection = "descubrir";
+  let activeTopic = "";
+
+  // ============================================================
+  //  PERSISTENCIA
+  // ============================================================
+  function loadNews() {
+    try {
+      const s = localStorage.getItem("kernelnews_news");
+      return s ? JSON.parse(s) : [...seedNews];
+    } catch (e) { return [...seedNews]; }
+  }
+  function saveNews() { localStorage.setItem("kernelnews_news", JSON.stringify(news)); }
+
+  function loadTopics() {
+    try {
+      const s = localStorage.getItem("kernelnews_topics");
+      const raw = s ? JSON.parse(s) : null;
+      if (!raw || !raw.length) return JSON.parse(JSON.stringify(defaultTopics));
+      return raw.map(t => typeof t === "string" ? { name: t, icon: "" } : t);
+    } catch (e) { return JSON.parse(JSON.stringify(defaultTopics)); }
+  }
+  function saveTopics() { localStorage.setItem("kernelnews_topics", JSON.stringify(topics)); }
+  let topics = loadTopics();
+
+  function topicIcon(t) { return (t && t.icon) ? t.icon.trim() : ""; }
+  function topicName(t) { return typeof t === "string" ? t : t.name; }
+
+  function loadEvents() {
+    try {
+      const s = localStorage.getItem("kernelnews_events");
+      return s ? JSON.parse(s) : [...seedEvents];
+    } catch (e) { return [...seedEvents]; }
+  }
+  function saveEvents() { localStorage.setItem("kernelnews_events", JSON.stringify(events)); }
+  let events = loadEvents();
+
+  // ============================================================
+  //  ICONOS + INIT
+  // ============================================================
+  document.addEventListener("DOMContentLoaded", () => {
+    lucide.createIcons();
+    renderTopics();
+    fillCategoryOptions();
+    renderNews();
+    renderEventsSection();
+    applyAuthUI();
+    setSection("descubrir");
+    renderAdmin();
+  });
+
+  function renderTopics() {
+    const list = document.getElementById("topicsList");
+    list.innerHTML = topics.map(t =>
+      `<button data-topic="${escapeAttr(topicName(t))}" onclick="setTopic('${escapeAttr(topicName(t))}')"
+         class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
+          ${topicIcon(t)
+            ? `<i class="${topicIcon(t)} w-[17px] text-center text-[15px] text-black/40"></i>`
+            : `<i data-lucide="hash" class="h-[17px] w-[17px]"></i>`}
+          <span class="truncate">${topicName(t)}</span>
+       </button>`
+    ).join("");
+    lucide.createIcons();
+  }
+
+  function fillCategoryOptions() {
+    const sel = document.getElementById("fCategory");
+    if (!sel) return;
+    sel.innerHTML = topics.map(t => `<option>${topicName(t)}</option>`).join("");
+  }
+  function repopulateFormCategories() {
+    fillCategoryOptions();
+    const sel = document.getElementById("fCategory");
+    if (sel && topics.length) sel.value = topics[0];
+  }
+
+  function escapeAttr(s) { return s.replace(/['"]/g, ""); }
+
+  // ============================================================
+  //  NAVEGACIÓN
+  // ============================================================
+  function clearActive() {
+    document.querySelectorAll(".nav-item").forEach(b => {
+      b.classList.remove("active-pill");
+      b.querySelector("i")?.setAttribute("stroke", "currentColor");
+      b.querySelector("i")?.setAttribute("fill", "none");
+    });
+  }
+
+  function setSection(sec) {
+    activeSection = sec;
+    activeTopic = "";
+    clearActive();
+    const btn = document.querySelector(`#sidebar .nav-item[data-id="${sec}"]`);
+    if (btn) btn.classList.add("active-pill");
+    document.getElementById("heroSection").style.display = (sec === "descubrir") ? "block" : "none";
+    document.getElementById("mainSubtitle").textContent = {
+      descubrir: "Lo último del ecosistema Apple Developer.",
+      noticias: "Todas las publicaciones, de la más reciente a la más antigua.",
+      marcadores: "Las noticias que has guardado para leer más tarde.",
+      eventos: "Descubre en esta página todos los futuros eventos de las grandes tecnologicas."
+    }[sec];
+    if (sec === "eventos") { renderEventsSection(); return; }
+    renderNews();
+  }
+
+  function renderEventsSection() {
+    const hero = document.getElementById("heroSection");
+    hero.style.display = "none";
+    const empty = document.getElementById("emptyState");
+    const container = document.getElementById("newsList");
+
+    const upcoming = [...events].sort((a,b) => a.date.localeCompare(b.date));
+
+    if (!upcoming.length) {
+      empty.classList.remove("hidden");
+      document.getElementById("emptyState").querySelector("p").textContent = "No hay eventos programados todavía.";
+      container.classList.add("hidden");
+      return;
+    }
+    empty.classList.add("hidden");
+    container.classList.remove("hidden");
+
+    container.innerHTML = upcoming.map(ev => `
+      <article onclick="openEvent(${ev.id})"
+        class="news-row group flex cursor-pointer items-center gap-4 rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-black/[0.04]">
+        <img src="${ev.image}" alt="" class="h-16 w-16 shrink-0 rounded-xl object-cover" />
+        <div class="min-w-0 flex-1">
+          <h3 class="truncate text-[15px] font-semibold text-[#1d1d1f] group-hover:text-[#0071E3]">${ev.title}</h3>
+          <p class="mt-0.5 truncate text-[13px] text-black/45">${formatEventDate(ev.date)} · ${ev.time} · ${ev.location}</p>
+        </div>
+        <span class="hidden shrink-0 rounded-full bg-[#0071E3]/10 px-2.5 py-1 text-[11px] font-semibold text-[#0071E3] sm:block">${ev.type}</span>
+      </article>
+    `).join("");
+    lucide.createIcons();
+  }
+
+  function formatEventDate(iso) {
+    if (!iso) return "";
+    try {
+      return new Date(iso + "T00:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
+    } catch (e) { return iso; }
+  }
+
+  function openEvent(id) {
+    const ev = events.find(x => x.id === id);
+    if (!ev) return;
+    if (!document.getElementById("eventModal")) {
+      const el = document.createElement("div");
+      el.id = "eventModal"; el.className = "fixed inset-0 z-50 hidden items-center justify-center p-4";
+      el.innerHTML = `
+        <div class="modal-backdrop absolute inset-0" onclick="closeEvent()"></div>
+        <div class="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl show">
+          <img id="evImage" class="h-44 w-full object-cover" />
+          <button onclick="closeEvent()" class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/90 shadow">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+          <div class="p-6">
+            <div class="flex items-center gap-2 text-[12px] text-black/45">
+              <span class="rounded-full bg-[#0071E3]/10 px-2 py-0.5 font-semibold text-[#0071E3]" id="evType"></span>
+              <span id="evMeta"></span>
+            </div>
+            <h2 class="mt-3 text-[24px] font-bold leading-tight text-[#1d1d1f]" id="evTitle"></h2>
+            <p class="mt-3 text-[14px] leading-relaxed text-black/60" id="evDesc"></p>
+            <div class="mt-4 flex items-center gap-2 rounded-xl bg-[#f5f5f7] p-3 text-[13px] text-black/70">
+              <i data-lucide="map-pin" class="h-4 w-4 text-[#0071E3]"></i>
+              <span id="evLoc"></span>
+            </div>
+            <button onclick="closeEvent()" class="mt-5 w-full rounded-full bg-[#0071E3] py-2.5 text-[14px] font-semibold text-white hover:bg-[#0077ED]">Interesado</button>
+          </div>
+        </div>`;
+      document.body.appendChild(el);
+    }
+    document.getElementById("evImage").src = ev.image;
+    document.getElementById("evTitle").textContent = ev.title;
+    document.getElementById("evType").textContent = ev.type;
+    document.getElementById("evMeta").textContent = `${formatEventDate(ev.date)} · ${ev.time}`;
+    document.getElementById("evDesc").textContent = ev.description;
+    document.getElementById("evLoc").textContent = ev.location;
+    const m = document.getElementById("eventModal");
+    m.classList.remove("hidden"); m.classList.add("flex");
+    lucide.createIcons();
+  }
+  function closeEvent() {
+    const m = document.getElementById("eventModal");
+    if (m) { m.classList.add("hidden"); m.classList.remove("flex"); }
+  }
+
+  function setTopic(t) {
+    activeTopic = t;
+    activeSection = "";
+    clearActive();
+    document.querySelector(`#sidebar .nav-item[data-topic="${t}"]`)?.classList.add("active-pill");
+    document.getElementById("heroSection").style.display = "none";
+    document.getElementById("mainSubtitle").textContent = `Artículos sobre ${t}.`;
+    renderNews();
+  }
+
+  // ============================================================
+  //  FILTRADO + RENDER
+  // ============================================================
+  function filteredNews() {
+    let list = [...news];
+    if (activeSection === "marcadores") {
+      const marks = JSON.parse(localStorage.getItem("kernelnews_marks") || "[]");
+      list = list.filter(n => marks.includes(n.id));
+    } else if (activeTopic) {
+      list = list.filter(n => n.category === activeTopic);
+    }
+    const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+    if (q) list = list.filter(n =>
+      n.title.toLowerCase().includes(q) || n.category.toLowerCase().includes(q) || n.excerpt.toLowerCase().includes(q));
+    return list;
+  }
+
+  function renderNews() {
+    const list = filteredNews();
+    document.getElementById("newsCount").textContent = list.length;
+
+    const hero = list.find(n => n.featured);
+    if (hero && activeSection === "descubrir") {
+      document.getElementById("heroImage").src = hero.image;
+      document.getElementById("heroTitle").textContent = hero.title;
+      document.getElementById("heroTag").textContent = hero.category;
+      document.getElementById("heroExcerpt").textContent = hero.excerpt;
+    }
+
+    const container = document.getElementById("newsList");
+    const shown = (activeSection === "descubrir" && hero) ? list.filter(n => n.id !== hero.id) : list;
+
+    if (shown.length === 0) {
+      document.getElementById("emptyState").classList.remove("hidden");
+      container.classList.add("hidden");
+    } else {
+      document.getElementById("emptyState").classList.add("hidden");
+      container.classList.remove("hidden");
+    }
+
+    const isAdmin = !!(currentUser && currentUser.role === "administrador");
+    container.innerHTML = shown.map(n => `
+      <article onclick="openArticle(${n.id})"
+        class="news-row group flex cursor-pointer items-center gap-4 rounded-xl bg-white p-3.5 shadow-sm ring-1 ring-black/[0.04]">
+        <img src="${n.image}" alt="" class="h-16 w-16 shrink-0 rounded-xl object-cover" />
+        <div class="min-w-0 flex-1">
+          <h3 class="truncate text-[15px] font-semibold text-[#1d1d1f] group-hover:text-[#0071E3]">${n.title}</h3>
+          <p class="mt-0.5 truncate text-[13px] text-black/45">${n.category} · ${n.minutes} min de lectura · ${n.date}</p>
+        </div>
+        ${isAdmin ? `
+        <div class="hidden shrink-0 items-center gap-1 sm:flex">
+          <button onclick="event.stopPropagation(); openEditModal(${n.id})" title="Editar noticia"
+            class="grid h-8 w-8 place-items-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-[#0071E3]">
+            <i data-lucide="pencil" class="h-4 w-4"></i>
+          </button>
+          <button onclick="event.stopPropagation(); deleteStory(${n.id})" title="Eliminar noticia"
+            class="grid h-8 w-8 place-items-center rounded-full text-black/50 hover:bg-red-50 hover:text-red-500">
+            <i data-lucide="trash-2" class="h-4 w-4"></i>
+          </button>
+        </div>` : ""}
+        <i data-lucide="chevron-right" class="chev-ico hidden h-5 w-5 shrink-0 text-[#0071E3] sm:block"></i>
+      </article>
+    `).join("");
+    lucide.createIcons();
+  }
+
+  document.getElementById("searchInput").addEventListener("input", renderNews);
+
+  // ============================================================
+  //  ARTÍCULO (modal simple)
+  // ============================================================
+  function openArticle(id) {
+    const n = news.find(x => x.id === id);
+    if (!n) return;
+    if (!document.getElementById("readerModal")) {
+      const el = document.createElement("div");
+      el.id = "readerModal"; el.className = "fixed inset-0 z-50 hidden items-center justify-center p-4";
+      el.innerHTML = `
+        <div class="modal-backdrop absolute inset-0" onclick="closeArticle()"></div>
+        <div class="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl show">
+          <img id="rImage" class="h-52 w-full object-cover" />
+          <button onclick="closeArticle()" class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/90 shadow">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+          <div class="p-7 pt-5">
+            <div class="flex items-center gap-2 text-[12px] text-black/45">
+              <span class="rounded-full bg-[#0071E3]/10 px-2 py-0.5 font-semibold text-[#0071E3]" id="rCat"></span>
+              <span id="rMeta"></span>
+            </div>
+            <h2 class="mt-3 text-[26px] font-bold leading-tight text-[#1d1d1f]" id="rTitle"></h2>
+            <div class="md-body mt-3 text-[15px] text-black/70" id="rBody"></div>
+            <div class="mt-5 flex items-center justify-between">
+              <button id="rMark" onclick="event.stopPropagation(); toggleCurrentMark()" class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10"></button>
+              <div id="rAdminActions" class="hidden items-center gap-1">
+                <button onclick="event.stopPropagation(); closeArticle(); openEditModal(openArticleId)" title="Editar noticia"
+                  class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">
+                  <i data-lucide="pencil" class="h-3.5 w-3.5"></i> Editar
+                </button>
+                <button onclick="event.stopPropagation(); closeArticle(); deleteStory(openArticleId)" title="Eliminar noticia"
+                  class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-red-500 hover:bg-red-50">
+                  <i data-lucide="trash-2" class="h-3.5 w-3.5"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(el);
+    }
+    const m = document.getElementById("readerModal");
+    openArticleId = id;
+    document.getElementById("rImage").src = n.image;
+    document.getElementById("rTitle").textContent = n.title;
+    document.getElementById("rCat").textContent = n.category;
+    document.getElementById("rMeta").textContent = `${n.minutes} min de lectura · ${n.date}`;
+    document.getElementById("rBody").innerHTML = renderMarkdown(n.content || n.excerpt);
+    updateMarkBtn(n.id);
+    const adminActions = document.getElementById("rAdminActions");
+    if (adminActions) {
+      const isAdmin = !!(currentUser && currentUser.role === "administrador");
+      adminActions.classList.toggle("hidden", !isAdmin);
+      adminActions.classList.toggle("flex", isAdmin);
+    }
+    m.classList.remove("hidden"); m.classList.add("flex");
+    lucide.createIcons();
+  }
+  function closeArticle() {
+    const m = document.getElementById("readerModal");
+    if (m) { m.classList.add("hidden"); m.classList.remove("flex"); }
+  }
+
+  // ============================================================
+  //  MARCADORES
+  // ============================================================
+  function getMarks() { return JSON.parse(localStorage.getItem("kernelnews_marks") || "[]"); }
+  function setMarks(arr) { localStorage.setItem("kernelnews_marks", JSON.stringify(arr)); }
+  let openArticleId = null;
+  function toggleCurrentMark() {
+    if (openArticleId == null) return;
+    toggleMark(openArticleId);
+  }
+  function toggleMark(id) {
+    const marks = getMarks();
+    const idx = marks.indexOf(id);
+    idx >= 0 ? marks.splice(idx, 1) : marks.push(id);
+    setMarks(marks);
+    updateMarkBtn(id); renderNews();
+  }
+  function updateMarkBtn(id) {
+    const marked = getMarks().includes(id);
+    const btn = document.getElementById("rMark");
+    if (btn) btn.innerHTML = (marked ? '<i data-lucide="bookmark-check" class="mr-1 h-4 w-4 inline"></i>Guardado' : '<i data-lucide="bookmark" class="mr-1 h-4 w-4 inline"></i>Guardar');
+    if (btn) lucide.createIcons();
+  }
+
+  // ============================================================
+  //  AUTENTICACIÓN
+  // ============================================================
+  function handleAuthClick() {
+    if (currentUser) { logout(); }
+    else { openLogin(); }
+  }
+
+  function openLogin() {
+    document.getElementById("loginModal").classList.remove("hidden");
+    document.getElementById("loginModal").classList.add("flex");
+    setTimeout(() => document.getElementById("loginUsername").focus(), 50);
+  }
+  function closeLogin() {
+    document.getElementById("loginModal").classList.add("hidden");
+    document.getElementById("loginModal").classList.remove("flex");
+  }
+  function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById("loginUsername").value.trim();
+    if (!username) return;
+    const role = (ADMIN_GITHUB_USERNAME && username.toLowerCase() === ADMIN_GITHUB_USERNAME.toLowerCase())
+      ? "administrador" : "lector";
+    currentUser = { username, role };
+    try { localStorage.setItem("kernelnews_user", JSON.stringify(currentUser)); } catch (e) {}
+    closeLogin();
+    applyAuthUI();
+  }
+
+  function logout() {
+    currentUser = null;
+    try { localStorage.removeItem("kernelnews_user"); } catch (e) {}
+    applyAuthUI();
+  }
+
+  function applyAuthUI() {
+    const nameEl = document.getElementById("authName");
+    const roleEl = document.getElementById("authRole");
+    const avatar = document.getElementById("authAvatar");
+    const icon = document.getElementById("authIcon");
+
+    if (currentUser) {
+      nameEl.textContent = "@" + currentUser.username;
+      roleEl.textContent = currentUser.role === "administrador" ? "Administrador" : "Lector";
+      avatar.innerHTML = `<span class="text-[13px] font-bold">${currentUser.username.charAt(0).toUpperCase()}</span>`;
+      if (currentUser.role === "administrador") { avatar.classList.add("bg-gradient-to-br","from-[#1d1d1f]","to-black"); }
+      icon.setAttribute("data-lucide", "log-out"); icon.setAttribute("title","Cerrar sesión");
+    } else {
+      nameEl.textContent = "Iniciar como Admin";
+      roleEl.textContent = "Solo Administrador";
+      avatar.innerHTML = '<i data-lucide="user" class="h-5 w-5"></i>';
+      avatar.classList.remove("bg-gradient-to-br","from-[#1d1d1f]","to-black");
+      icon.setAttribute("data-lucide","log-in"); icon.removeAttribute("title");
+    }
+    lucide.createIcons();
+
+    const banner = document.getElementById("adminBanner");
+    const isAdmin = currentUser && currentUser.role === "administrador";
+    if (isAdmin) { banner.classList.remove("hidden"); banner.classList.add("flex"); openAdmin("noticias"); }
+    else { banner.classList.add("hidden"); banner.classList.remove("flex"); }
+  }
+
+  // OAuth preparado (se puede sustituir por redirect real)
+  function startGitHubOAuth() {
+    if (GITHUB_OAUTH_ENDPOINT) {
+      const clientId = "TU_GITHUB_CLIENT_ID";
+      const redirect = encodeURIComponent(location.origin + "/api/auth/callback");
+      location.href = `${GITHUB_OAUTH_ENDPOINT}?client_id=${clientId}&redirect_uri=${redirect}&scope=read:user`;
+    } else {
+      showAlert("Configura GITHUB_OAUTH_ENDPOINT en el código para activar el flujo OAuth real.");
+    }
+  }
+
+  // ============================================================
+  //  PANEL DE CONTROL
+  // ============================================================
+  function renderAdmin() {
+    document.getElementById("adminUsername").textContent = ADMIN_GITHUB_USERNAME || "TU_USUARIO_AQUI";
+  }
+
+  function openAdmin(tab) {
+    document.querySelectorAll("#adminTabs [data-admin]").forEach(b => {
+      const active = b.dataset.admin === tab;
+      b.className = active
+        ? "rounded-full bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#0071E3] shadow-sm ring-1 ring-black/5"
+        : "rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-black/50 hover:bg-black/[0.05]";
+    });
+    if (tab === "temas") openTopicsModal();
+    else if (tab === "eventos") openEventsModal();
+    else if (tab === "ajustes") openSettings();
+  }
+
+  // ---- Ajustes ----
+  function openSettings() { renderAdmin(); document.getElementById("settingsModal").classList.remove("hidden"); document.getElementById("settingsModal").classList.add("flex"); }
+  function closeSettings() { document.getElementById("settingsModal").classList.add("hidden"); document.getElementById("settingsModal").classList.remove("flex"); }
+
+  // ---- Temas ----
+  function openTopicsModal() { renderTopicsModal(); document.getElementById("topicsModal").classList.remove("hidden"); document.getElementById("topicsModal").classList.add("flex"); }
+  function closeTopicsModal() { document.getElementById("topicsModal").classList.add("hidden"); document.getElementById("topicsModal").classList.remove("flex"); }
+
+  function renderTopicsModal() {
+    const list = document.getElementById("topicsManageList");
+    list.innerHTML = topics.map(t => `
+      <div class="flex items-center justify-between gap-2 rounded-lg bg-[#f5f5f7] px-3 py-2">
+        <span class="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#1d1d1f]">
+          ${topicIcon(t)
+            ? `<i class="${topicIcon(t)} w-5 text-center text-[15px] text-black/50"></i>`
+            : `<i data-lucide="hash" class="h-4 w-4 shrink-0 text-black/40"></i>`}
+          <span class="truncate">${topicName(t)}</span>
+        </span>
+        <div class="flex shrink-0 items-center gap-1">
+          <button onclick="openTopicEdit('${escapeAttr(topicName(t))}')" class="grid h-7 w-7 place-items-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-[#0071E3]" title="Editar tema">
+            <i data-lucide="pencil" class="h-4 w-4"></i>
+          </button>
+          <button onclick="removeTopic('${escapeAttr(topicName(t))}')" class="grid h-7 w-7 place-items-center rounded-full text-red-500 hover:bg-red-50" title="Eliminar tema">
+            <i data-lucide="trash-2" class="h-4 w-4"></i>
+          </button>
+        </div>
+      </div>
+    `).join("");
+    lucide.createIcons();
+  }
+
+  function openTopicEdit(name) {
+    const t = topics.find(x => topicName(x) === name);
+    if (!t) return;
+    document.getElementById("editTopicOrig").value = topicName(t);
+    document.getElementById("editTopicName").value = topicName(t);
+    document.getElementById("editTopicIcon").value = topicIcon(t) || "fa-solid fa-";
+    updateEditTopicPreview();
+    closeTopicsModal();
+    document.getElementById("editTopicModal").classList.remove("hidden");
+    document.getElementById("editTopicModal").classList.add("flex");
+  }
+  function closeTopicEdit() { document.getElementById("editTopicModal").classList.add("hidden"); document.getElementById("editTopicModal").classList.remove("flex"); }
+  function updateTopicPreview() {
+    const cls = document.getElementById("newTopicIcon").value.trim() || "fa-tag";
+    const el = document.getElementById("newTopicPreview");
+    el.className = cls + " shrink-0";
+  }
+  function updateEditTopicPreview() {
+    const cls = document.getElementById("editTopicIcon").value.trim() || "fa-tag";
+    const el = document.getElementById("editTopicPreview");
+    el.className = cls;
+    document.getElementById("editTopicPreviewText").textContent = cls || "sin icono";
+  }
+
+  function saveTopicEdit() {
+    const oldName = document.getElementById("editTopicOrig").value;
+    const name = document.getElementById("editTopicName").value.trim();
+    const icon = document.getElementById("editTopicIcon").value.trim();
+    if (!name) return;
+    const idx = topics.findIndex(x => topicName(x) === oldName);
+    if (idx === -1) return;
+    if (topicName(topics[idx]) !== name && topics.some(x => topicName(x) === name)) {
+      showAlert("Ese nombre de tema ya existe.");
+      return;
+    }
+    topics[idx] = { name, icon };
+    saveTopics();
+    closeTopicEdit();
+    renderTopics();
+    fillCategoryOptions();
+    renderTopicsModal();
+    if (activeTopic === oldName) { activeTopic = name; setTopic(name); }
+    else { setSection(activeSection || "noticias"); }
+  }
+
+  function addTopic() {
+    const name = document.getElementById("newTopicInput").value.trim();
+    const icon = document.getElementById("newTopicIcon").value.trim();
+    if (!name) return;
+    if (topics.some(t => topicName(t) === name)) { showAlert("Ese tema ya existe."); return; }
+    topics.push({ name, icon });
+    saveTopics();
+    document.getElementById("newTopicInput").value = "";
+    document.getElementById("newTopicIcon").value = "fa-solid fa-";
+    renderTopics();
+    fillCategoryOptions();
+    renderTopicsModal();
+  }
+  function removeTopic(name) {
+    showConfirm(`¿Eliminar el tema "${name}" de la barra lateral?`, () => {
+      topics = topics.filter(t => topicName(t) !== name);
+      saveTopics();
+      renderTopics();
+      fillCategoryOptions();
+      renderTopicsModal();
+      if (activeTopic === name) { activeTopic = ""; setSection("noticias"); }
+    }, { title: "Eliminar tema" });
+  }
+
+  // ---- Eventos ----
+  function openEventsModal() { renderEventsModal(); document.getElementById("eventsModal").classList.remove("hidden"); document.getElementById("eventsModal").classList.add("flex"); }
+  function closeEventsModal() { document.getElementById("eventsModal").classList.add("hidden"); document.getElementById("eventsModal").classList.remove("flex"); }
+
+  function renderEventsModal() {
+    const list = document.getElementById("eventsList");
+    const sorted = [...events].sort((a,b) => a.date.localeCompare(b.date));
+    list.innerHTML = sorted.map(ev => `
+      <div class="flex items-center justify-between gap-3 rounded-lg bg-[#f5f5f7] px-3 py-2">
+        <div class="min-w-0">
+          <p class="truncate text-[13px] font-semibold text-[#1d1d1f]">${ev.title}</p>
+          <p class="text-[12px] text-black/45">${formatEventDate(ev.date)} · ${ev.time} · ${ev.location}</p>
+        </div>
+        <button onclick="removeEvent(${ev.id})" class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-red-500 hover:bg-red-50" title="Eliminar evento">
+          <i data-lucide="trash-2" class="h-4 w-4"></i>
+        </button>
+      </div>
+    `).join("") || `<p class="py-6 text-center text-[13px] text-black/40">No hay eventos. Añade el primero.</p>`;
+    lucide.createIcons();
+  }
+
+  function openCreateEventModal() {
+    document.getElementById("eventForm").reset();
+    document.getElementById("createEventModal").classList.remove("hidden");
+    document.getElementById("createEventModal").classList.add("flex");
+  }
+  function closeCreateEventModal() {
+    document.getElementById("createEventModal").classList.add("hidden");
+    document.getElementById("createEventModal").classList.remove("flex");
+  }
+  function submitNewEvent(e) {
+    e.preventDefault();
+    const title = document.getElementById("evTitleInp").value.trim();
+    const date = document.getElementById("evDateInp").value;
+    const time = document.getElementById("evTimeInp").value;
+    const location = document.getElementById("evLocInp").value.trim();
+    const type = document.getElementById("evTypeInp").value.trim() || "Evento";
+    const description = document.getElementById("evDescInp").value.trim() || title;
+    const image = document.getElementById("evImgInp").value.trim()
+      || "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=900&q=80";
+    events.push({ id: Date.now(), title, date, time, location, type, description, image });
+    saveEvents();
+    closeCreateEventModal();
+    renderEventsModal();
+    renderEventsSection();
+  }
+  function removeEvent(id) {
+    const ev = events.find(x => x.id === id);
+    if (!ev) return;
+    showConfirm(`¿Eliminar el evento "${ev.title}"?`, () => {
+      events = events.filter(e => e.id !== id);
+      saveEvents();
+      renderEventsModal();
+      if (activeSection === "eventos") renderEventsSection();
+    }, { title: "Eliminar evento" });
+  }
+
+  // ---- Crear noticia ----
+  function openCreateModal() {
+    if (!currentUser || currentUser.role !== "administrador") return;
+    document.getElementById("createForm").reset();
+    document.getElementById("fId").value = "";
+    repopulateFormCategories();
+    document.getElementById("createModalTitle").textContent = "Crear Noticia";
+    document.getElementById("createModalSubmit").textContent = "Publicar";
+    document.getElementById("createModal").classList.remove("hidden");
+    document.getElementById("createModal").classList.add("flex");
+  }
+  function openEditModal(id) {
+    if (!currentUser || currentUser.role !== "administrador") return;
+    const n = news.find(x => x.id === id);
+    if (!n) return;
+    document.getElementById("createForm").reset();
+    document.getElementById("fId").value = n.id;
+    document.getElementById("fTitle").value = n.title;
+    fillCategoryOptions();
+    document.getElementById("fCategory").value = topics.some(x => topicName(x) === n.category) ? n.category : topicName(topics[0]);
+    document.getElementById("fMinutes").value = n.minutes || 5;
+    document.getElementById("fImage").value = n.image || "";
+    document.getElementById("fExcerpt").value = n.excerpt || "";
+    document.getElementById("fContent").value = n.content || "";
+    document.getElementById("fFeatured").checked = !!n.featured;
+    document.getElementById("createModalTitle").textContent = "Editar Noticia";
+    document.getElementById("createModalSubmit").textContent = "Guardar cambios";
+    document.getElementById("createModal").classList.remove("hidden");
+    document.getElementById("createModal").classList.add("flex");
+  }
+  function closeCreateModal() {
+    document.getElementById("createModal").classList.add("hidden");
+    document.getElementById("createModal").classList.remove("flex");
+  }
+  function submitNewStory(e) {
+    e.preventDefault();
+    const title = document.getElementById("fTitle").value.trim();
+    const category = document.getElementById("fCategory").value;
+    const minutes = parseInt(document.getElementById("fMinutes").value) || 5;
+    const image = document.getElementById("fImage").value.trim()
+      || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=900&q=80";
+    const excerpt = document.getElementById("fExcerpt").value.trim() || title;
+    const content = document.getElementById("fContent").value.trim() || excerpt;
+    const featured = document.getElementById("fFeatured").checked;
+    const editId = parseInt(document.getElementById("fId").value);
+
+    if (editId) {
+      const idx = news.findIndex(x => x.id === editId);
+      if (idx === -1) return;
+      news[idx] = { ...news[idx], title, category, minutes, image, excerpt, content, featured };
+      saveNews();
+      closeCreateModal();
+      if (activeSection === "descubrir") renderNews();
+      else renderNews();
+      return;
+    }
+
+    news.unshift({ id: Date.now(), title, category, minutes, date: "Recién publicado", excerpt, content, image, featured });
+    saveNews();
+    closeCreateModal();
+    activeSection = "noticias"; activeTopic = "";
+    clearActive();
+    document.querySelector('#sidebar .nav-item[data-id="noticias"]')?.classList.add("active-pill");
+    document.getElementById("heroSection").style.display = "none";
+    document.getElementById("mainSubtitle").textContent = "Todas las publicaciones, de la más reciente a la más antigua.";
+    renderNews();
+  }
+  function deleteStory(id) {
+    if (!currentUser || currentUser.role !== "administrador") return;
+    const n = news.find(x => x.id === id);
+    if (!n) return;
+    showConfirm(`¿Eliminar la noticia "${n.title}"? Esta acción no se puede deshacer.`, () => {
+      news = news.filter(x => x.id !== id);
+      saveNews();
+      const marks = getMarks().filter(m => m !== id);
+      setMarks(marks);
+      renderNews();
+    }, { title: "Eliminar noticia" });
+  }
+
+  // ============================================================
+  //  MARKDOWN (mini-parser, sin dependencias)
+  // ============================================================
+  function mdToolbar(openSym, closeSym, fieldId, wrap) {
+    const ta = document.getElementById(fieldId);
+    if (!ta) return;
+    const start = ta.selectionStart, end = ta.selectionEnd;
+    const sel = ta.value.slice(start, end) || "texto";
+    const open = openSym.replace("\\n", "\n");
+    const close = wrap ? closeSym : "";
+    const replacement = open + sel + close;
+    ta.value = ta.value.slice(0, start) + replacement + ta.value.slice(end);
+    ta.focus();
+    try { ta.setSelectionRange(start + open.length, start + open.length + sel.length); } catch (e) {}
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+            .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+
+  function inlineMarkdown(s) {
+    s = escapeHtml(s);
+    s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return s;
+  }
+
+  function renderMarkdown(md) {
+    if (!md) return "";
+    const lines = md.split("\n");
+    let html = "", list = null, inCode = false, codeLines = [], codeLang = "";
+
+    const flushList = () => {
+      if (list) { html += "</" + list + ">\n"; list = null; }
+    };
+    const flushCode = () => {
+      if (inCode) { html += `<pre><code class="language-${codeLang}">${escapeHtml(codeLines.join("\n"))}</code></pre>\n`; codeLines = []; inCode = false; }
+    };
+
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+
+      if (line.trim().startsWith("```")) {
+        if (inCode) { flushCode(); }
+        else { flushList(); inCode = true; codeLang = line.trim().replace(/^```/, "").trim(); codeLines = []; }
+        continue;
+      }
+      if (inCode) { codeLines.push(line); continue; }
+
+      const trimmed = line.trim();
+
+      if (!trimmed) { flushList(); html += trimmed === "" ? "" : ""; continue; }
+
+      if (trimmed.startsWith("### ")) { flushList(); html += `<h3>${inlineMarkdown(trimmed.slice(4))}</h3>\n`; continue; }
+      if (trimmed.startsWith("## ")) { flushList(); html += `<h2>${inlineMarkdown(trimmed.slice(3))}</h2>\n`; continue; }
+      if (trimmed.startsWith("# ")) { flushList(); html += `<h1>${inlineMarkdown(trimmed.slice(2))}</h1>\n`; continue; }
+      if (trimmed === "---") { flushList(); html += "<hr/>\n"; continue; }
+      if (trimmed.startsWith("> ")) { flushList(); html += `<blockquote>${inlineMarkdown(trimmed.slice(2))}</blockquote>\n`; continue; }
+
+      if (/^[-*]\s+/.test(trimmed)) {
+        if (list !== "ul") { flushList(); html += "<ul>\n"; list = "ul"; }
+        html += `<li>${inlineMarkdown(trimmed.replace(/^[-*]\s+/, ""))}</li>\n`;
+        continue;
+      }
+      if (/^\d+[.)]\s+/.test(trimmed)) {
+        if (list !== "ol") { flushList(); html += "<ol>\n"; list = "ol"; }
+        html += `<li>${inlineMarkdown(trimmed.replace(/^\d+[.)]\s+/, ""))}</li>\n`;
+        continue;
+      }
+
+      flushList();
+      html += `<p>${inlineMarkdown(trimmed)}</p>\n`;
+    }
+
+    flushList();
+    flushCode();
+    return html;
+  }
+
+  // ============================================================
+  //  CONFIRMACIÓN / AVISO PERSONALIZADO (reemplaza confirm/alert)
+  // ============================================================
+  let confirmCallback = null;
+
+  function showConfirm(message, onConfirm, opts) {
+    opts = opts || {};
+    confirmCallback = onConfirm;
+    document.getElementById("confirmTitle").textContent = opts.title || "Confirmar";
+    document.getElementById("confirmMessage").textContent = message;
+    document.getElementById("confirmOkBtn").textContent = opts.okText || (opts.danger ? "Eliminar" : "Aceptar");
+    document.getElementById("confirmCancelBtn").style.display = opts.danger ? "" : "none";
+
+    const iconWrap = document.getElementById("confirmIconWrap");
+    const okBtn = document.getElementById("confirmOkBtn");
+    if (opts.danger !== false) {
+      iconWrap.className = "mx-auto grid h-12 w-12 place-items-center rounded-full bg-red-50 text-red-500";
+      iconWrap.innerHTML = '<i data-lucide="alert-triangle" class="h-6 w-6"></i>';
+      okBtn.className = "rounded-full bg-red-500 py-2.5 text-[13px] font-semibold text-white hover:bg-red-600";
+    } else {
+      iconWrap.className = "mx-auto grid h-12 w-12 place-items-center rounded-full bg-[#0071E3]/10 text-[#0071E3]";
+      iconWrap.innerHTML = '<i data-lucide="info" class="h-6 w-6"></i>';
+      okBtn.className = "rounded-full bg-[#0071E3] py-2.5 text-[13px] font-semibold text-white hover:bg-[#0077ED]";
+    }
+    lucide.createIcons();
+    const m = document.getElementById("confirmModal");
+    m.classList.remove("hidden"); m.classList.add("flex");
+  }
+
+  function runConfirm() {
+    const cb = confirmCallback;
+    confirmCallback = null;
+    closeConfirm();
+    if (typeof cb === "function") cb();
+  }
+  function cancelConfirm() {
+    confirmCallback = null;
+    closeConfirm();
+  }
+  function closeConfirm() {
+    const m = document.getElementById("confirmModal");
+    if (m) { m.classList.add("hidden"); m.classList.remove("flex"); }
+  }
+  function showAlert(message) {
+    showConfirm(message, null, { title: "Aviso", okText: "Entendido", danger: false });
+  }
+</script>
+</body>
+</html>
