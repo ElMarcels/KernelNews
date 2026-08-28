@@ -91,6 +91,45 @@
   .md-body strong { font-weight: 700; }
   .md-body img { border-radius: 10px; margin: 1em 0; max-width: 100%; }
   .md-body hr { border: none; border-top: 1px solid #e3e3e6; margin: 1.5em 0; }
+
+  /* ============================================================
+     MODO OSCURO (toggle) — override sobre todo el tema claro
+     ============================================================ */
+  body.dark-mode {
+    background: #161618;
+    color: #f5f5f7;
+  }
+  body.dark-mode main, body.dark-mode main.bg-\[\#f5f5f7\] { background: #161618 !important; }
+  body.dark-mode .sidebar-glass {
+    background: rgba(28, 28, 30, 0.78) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+  body.dark-mode .text-\[\#1d1d1f\] { color: #f5f5f7 !important; }
+  body.dark-mode .text-black\/50, body.dark-mode .text-black\/40,
+  body.dark-mode .text-black\/35, body.dark-mode .text-black\/30,
+  body.dark-mode .text-black\/45, body.dark-mode .text-black\/60,
+  body.dark-mode .text-black\/55, body.dark-mode .text-black\/70 { color: rgba(255,255,255,0.6) !important; }
+  body.dark-mode .bg-white { background: #1c1c1e !important; }
+  body.dark-mode .bg-\[\#f5f5f7\] { background: #1c1c1e !important; }
+  body.dark-mode .bg-white\/90 { background: rgba(28,28,30,0.9) !important; }
+  body.dark-mode [class*="bg-black/["] { background: rgba(255,255,255,0.08) !important; }
+  body.dark-mode .ring-black\/5, body.dark-mode .ring-1 { --tw-ring-color: rgba(255,255,255,0.08) !important; }
+  body.dark-mode .border-black\/10, body.dark-mode .border-black\/\[0\.08\],
+  body.dark-mode .border-black\/5 { border-color: rgba(255,255,255,0.1) !important; }
+  body.dark-mode .sidebar-glass { border-color: rgba(255,255,255,0.08); }
+  body.dark-mode .modal-backdrop { background: rgba(0,0,0,.6); }
+  body.dark-mode .news-row:hover { background: #26262a; }
+  body.dark-mode .window-dot ~ span { color: rgba(255,255,255,0.4); }
+  body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+    color: #f5f5f7; background-color: #26262a; border-color: rgba(255,255,255,0.12);
+  }
+  body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: rgba(255,255,255,0.35); }
+  body.dark-mode .hover\:bg-black\/\[0\.05\]:hover { background: rgba(255,255,255,0.07); }
+  body.dark-mode .sidebar-glass span.text-black\/30 { color: rgba(255,255,255,0.4); }
+  body.dark-mode .md-body code, body.dark-mode pre { color: #f5c6a0; }
+  body.dark-mode .md-body blockquote { background: #26262a; color: #c9c9ce; }
+  body.dark-mode .md-body h1, body.dark-mode .md-body h2, body.dark-mode .md-body h3 { color: #f5f5f7; }
+  body.dark-mode .shadow-sm, body.dark-mode .shadow-xl, body.dark-mode .shadow-2xl { --tw-shadow-color: rgba(0,0,0,0.5); }
 </style>
 </head>
 <body>
@@ -107,6 +146,19 @@
       <span class="window-dot bg-[#febc2e]"></span>
       <span class="window-dot bg-[#28c840]"></span>
       <span class="ml-auto text-[10px] font-medium tracking-wide text-black/30">KernelNews</span>
+    </div>
+
+    <!-- Toggle oscuro + idioma -->
+    <div class="flex items-center gap-1.5 px-5 pt-3">
+      <button onclick="toggleTheme()" id="themeToggle" title="Cambiar tema"
+        class="grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-black/60 transition hover:bg-black/[0.1]">
+        <i data-lucide="moon" class="h-4 w-4"></i>
+      </button>
+      <select id="langSelect" onchange="setLang(this.value)" title="Idioma"
+        class="h-8 rounded-full border border-black/10 bg-black/[0.06] px-2 text-[12px] font-semibold text-black/60 outline-none focus:border-[#0071E3]">
+        <option value="es">ES</option>
+        <option value="en">EN</option>
+      </select>
     </div>
 
     <!-- Brand -->
@@ -147,6 +199,10 @@
       <button data-id="eventos" onclick="setSection('eventos')"
         class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
         <i data-lucide="calendar" class="h-[18px] w-[18px]"></i> Eventos
+      </button>
+      <button data-id="borradores" id="draftsNav" onclick="setSection('borradores')"
+        class="nav-item hidden w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
+        <i data-lucide="file-pen" class="h-[18px] w-[18px]"></i> Borradores
       </button>
 
       <p class="px-3 pb-1.5 pt-4 text-[11px] font-semibold uppercase tracking-wide text-black/40">Temas</p>
@@ -243,6 +299,8 @@
         <p class="text-[13px] text-black/50">No hay resultados para esta búsqueda o categoría.</p>
       </div>
 
+      <div id="subBox" class="mt-8"></div>
+
       <div class="mt-10 pb-4 text-center text-[12px] text-black/35">
         KernelNews &copy; 2026 · Inspirado en el sistema de diseño Human Interface Guidelines de Apple.
       </div>
@@ -315,13 +373,17 @@
           Destacar en la portada (Hero)
         </label>
       </div>
-      <div class="flex justify-end gap-2 pt-1">
-        <button type="button" onclick="closeCreateModal()"
-          class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Cancelar</button>
-        <button type="submit"
+      <div class="flex items-center justify-between pt-1">
+        <button type="button" onclick="saveDraftNow()"
+          class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#b45309] hover:bg-[#b45309]/10"><i data-lucide="save" class="mr-1 inline h-3.5 w-3.5 align-[-2px]"></i>Guardar borrador</button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeCreateModal()"
+            class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Cancelar</button>
           <button type="submit" id="createModalSubmit"
-          class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Publicar</button>
+            class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Publicar</button>
+        </div>
       </div>
+      <p id="draftStatus" class="mb-6 mt-1 text-right text-[11px] text-black/35 transition-opacity duration-500" style="opacity:0"></p>
     </form>
   </div>
 </div>
@@ -700,8 +762,203 @@
   let currentUser = null;      // { username, role }
   let activeSection = "descubrir";
   let activeTopic = "";
+  let activeSubtopic = "";
   let adminKey = "";           // clave de administrador (backend)
   let backendOnline = false;
+
+  // ============================================================
+  //  INTERNACIONALIZACIÓN (ES/EN) — solo chrome de la interfaz
+  // ============================================================
+  const I18N = {
+    es: {
+      search: "Buscar noticias", explorar: "Explorar", descubrir: "Descubrir",
+      noticias: "Noticias", marcadores: "Marcadores", eventos: "Eventos",
+      temas: "Temas", crear_noticia: "Crear Noticia", destacado: "Destacado",
+      guardar: "Guardar", publicar: "Publicar", cancelar: "Cancelar",
+      cerrar: "Cerrar", aviso: "Aviso", config_admin: "Configuración del Administrador",
+      crear: "Crear", editar: "Editar", eliminar: "Eliminar", buscar: "Buscar",
+      pendientes: "pendientes", subtemas: "Subtemas", gestionar_temas: "Gestionar Temas",
+      nuevo_tema: "Nuevo tema", anyadir_tema: "Añadir Tema", nombre_tema: "Nombre del tema...",
+      min_lectura: "Minutos de lectura", url_imagen: "URL de imagen (opcional)",
+      extracto: "Extracto / descripción", contenido: "Contenido (Markdown)",
+      destacar_hero: "Destacar en la portada (Hero)", guardar_borrador: "Guardar borrador",
+      editar_borrador: "Editar borrador", sin_noticias: "Sin noticias aún",
+      sin_resultados: "No hay resultados para esta búsqueda o categoría.",
+      email: "Email", suscribir_email: "Suscribirme por email",
+      suscripcion_ok: "¡Suscripción registrada!", suscripcion_txt: "Recibe avisos de nuevas noticias y eventos.",
+      suscribir: "Suscribirme", suscrito: "Te avisaremos de nuevas publicaciones.",
+      borradores: "Borradores", boton_o: "o",
+      tema_eliminar_confirm: "¿Eliminar el tema", tema_guardado: "Tema guardado."
+    },
+    en: {
+      search: "Search news", explorar: "Explore", descubrir: "Discover",
+      noticias: "News", marcadores: "Bookmarks", eventos: "Events",
+      temas: "Topics", crear_noticia: "Create News", destacado: "Featured",
+      guardar: "Save", publicar: "Publish", cancelar: "Cancel",
+      cerrar: "Close", aviso: "Notice", config_admin: "Administrator Settings",
+      crear: "Create", editar: "Edit", eliminar: "Delete", buscar: "Search",
+      pendientes: "pending", subtemas: "Subtopics", gestionar_temas: "Manage Topics",
+      nuevo_tema: "New topic", anyadir_tema: "Add Topic", nombre_tema: "Topic name...",
+      min_lectura: "Reading minutes", url_imagen: "Image URL (optional)",
+      extracto: "Excerpt / description", contenido: "Content (Markdown)",
+      destacar_hero: "Feature on cover (Hero)", guardar_borrador: "Save draft",
+      editar_borrador: "Edit draft", sin_noticias: "No news yet",
+      sin_resultados: "No results for this search or category.",
+      email: "Email", suscribir_email: "Subscribe by email",
+      suscripcion_ok: "Subscription registered!", suscripcion_txt: "Get notified about new news and events.",
+      suscribir: "Subscribe", suscrito: "We'll notify you of new posts.",
+      borradores: "Drafts", boton_o: "or",
+      tema_eliminar_confirm: "Are you sure you want to delete the topic", tema_guardado: "Topic saved."
+    }
+  };
+  let lang = "es";
+
+  function t(key) { return (I18N[lang] && I18N[lang][key]) || I18N.es[key] || key; }
+  function applyLang() {
+    const el = document.getElementById("langSelect");
+    if (el) el.value = lang;
+    const map = {
+      searchInput: "search",
+      sideExplorar: "explorar",
+      navDescubrir: "descubrir",
+      navNoticias: "noticias",
+      navMarcadores: "marcadores",
+      navEventos: "eventos",
+      sideTemas: "temas"
+    };
+    for (const id in map) {
+      const node = document.getElementById(id);
+      if (node) {
+        if (id === "searchInput") node.placeholder = t(map[id]);
+        else node.textContent = t(map[id]);
+      }
+    }
+  }
+  function setLang(l) {
+    lang = l;
+    try { localStorage.setItem("kernelnews_lang", l); } catch (e) {}
+    applyLang();
+  }
+
+  // ============================================================
+  //  MODO OSCURO
+  // ============================================================
+  function toggleTheme() {
+    const dark = document.body.classList.toggle("dark-mode");
+    try { localStorage.setItem("kernelnews_theme", dark ? "dark" : "light"); } catch (e) {}
+    const ic = document.querySelector("#themeToggle i");
+    if (ic) ic.setAttribute("data-lucide", dark ? "sun" : "moon");
+    if (window.lucide) lucide.createIcons();
+  }
+  function loadTheme() {
+    let dark = false;
+    try { dark = localStorage.getItem("kernelnews_theme") === "dark"; } catch (e) {}
+    if (dark) {
+      document.body.classList.add("dark-mode");
+      const ic = document.querySelector("#themeToggle i");
+      if (ic) ic.setAttribute("data-lucide", "sun");
+    }
+    applyLang();
+  }
+
+  // ============================================================
+  //  BORRADORES + AUTOSAVE
+  // ============================================================
+  let autosaveTimer = null;
+  function autoSave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      if (!document.getElementById("fTitle")) return;
+      const title = document.getElementById("fTitle").value.trim();
+      const content = document.getElementById("fContent").value;
+      const category = (document.getElementById("fCategory") || {}).value || "";
+      const minutes = parseInt((document.getElementById("fMinutes") || {}).value) || 5;
+      const image = (document.getElementById("fImage") || {}).value || "";
+      const excerpt = (document.getElementById("fExcerpt") || {}).value || "";
+      const featured = !!(document.getElementById("fFeatured") || {}).checked;
+      const editId = parseInt(document.getElementById("fId").value) || 0;
+      const draftObj = {
+        id: editId || "draft-" + Date.now(), title, content, category, minutes, image, excerpt, featured,
+        draft: true, autosavedAt: Date.now()
+      };
+      try { localStorage.setItem("kernelnews_draft", JSON.stringify(draftObj)); } catch (e) {}
+      showDraftStatus("Borrador guardado · " + new Date().toLocaleTimeString());
+    }, 700);
+  }
+  function showDraftStatus(msg) {
+    const el = document.getElementById("draftStatus");
+    if (el) { el.textContent = msg; el.style.opacity = 1; clearTimeout(el._t); el._t = setTimeout(() => el.style.opacity = 0, 2000); }
+  }
+  function loadDraft() {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem("kernelnews_draft") || "null"); } catch (e) {}
+    return d;
+  }
+  function openDraft() {
+    if (!currentUser || currentUser.role !== "administrador") return;
+    const d = loadDraft();
+    if (!d) { showAlert("No hay ningún borrador guardado."); return; }
+    document.getElementById("fId").value = d.id && typeof d.id === "number" ? d.id : "";
+    document.getElementById("fTitle").value = d.title || "";
+    fillCategoryOptions();
+    document.getElementById("fCategory").value = d.category || topicName(topics[0]);
+    document.getElementById("fMinutes").value = d.minutes || 5;
+    document.getElementById("fImage").value = d.image || "";
+    document.getElementById("fExcerpt").value = d.excerpt || "";
+    document.getElementById("fContent").value = d.content || "";
+    document.getElementById("fFeatured").checked = !!d.featured;
+    document.getElementById("createModalTitle").textContent = t("editar_borrador");
+    document.getElementById("createModal").classList.remove("hidden");
+    document.getElementById("createModal").classList.add("flex");
+  }
+  function clearDraft() {
+    try { localStorage.removeItem("kernelnews_draft"); } catch (e) {}
+  }
+
+  // ============================================================
+  //  NOTIFICACIONES (push + email) client-side
+  // ============================================================
+  function renderSubscription() {
+    const box = document.getElementById("subBox");
+    if (!box) return;
+    let email = "";
+    try { email = localStorage.getItem("kernelnews_email") || ""; } catch (e) {}
+    box.innerHTML = `
+      <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+        <div class="flex items-center gap-2">
+          <div class="grid h-9 w-9 place-items-center rounded-xl bg-[#0071E3]/10 text-[#0071E3]">
+            <i data-lucide="bell" class="h-4 w-4"></i>
+          </div>
+          <h4 class="text-[15px] font-bold text-[#1d1d1f]">${t("suscribir")} 🛎</h4>
+        </div>
+        <p class="mt-2 text-[12px] leading-relaxed text-black/55">${t("suscripcion_txt")}</p>
+        <div class="mt-3 flex items-center gap-2">
+          <input id="subEmail" type="email" value="${escapeHtml(email)}" placeholder="${t("email")}"
+            class="w-full rounded-full border border-black/10 bg-[#f5f5f7] px-3.5 py-2 text-[13px] outline-none focus:border-[#0071E3]" />
+          <button onclick="subscribeEmail()"
+            class="shrink-0 rounded-full bg-[#0071E3] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">${t("suscribir")}</button>
+        </div>
+        <button onclick="subscribePush()" id="pushBtn"
+          class="mt-2 w-full rounded-full py-2 text-[12px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10"><i data-lucide="bell-plus" class="mr-1 inline h-3.5 w-3.5 align-[-1px]"></i> 🔔 Push</button>
+      </div>`;
+    lucide.createIcons();
+  }
+  function subscribeEmail() {
+    const v = (document.getElementById("subEmail") || {}).value || "";
+    if (!v || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { showAlert("Email no válido."); return; }
+    try {
+      localStorage.setItem("kernelnews_email", v);
+      document.getElementById("subEmail").value = v;
+    } catch (e) {}
+    showAlert(t("suscripcion_ok"));
+  }
+  async function subscribePush() {
+    if (!("Notification" in window)) { showAlert("Este navegador no soporta notificaciones push."); return; }
+    try {
+      const perm = await Notification.requestPermission();
+      showAlert(perm === "granted" ? "Notificaciones activadas." : "Permiso denegado.");
+    } catch (e) { showAlert("Error al pedir permiso."); }
+  }
 
   // ============================================================
   //  PERSISTENCIA LOCAL + BACKEND GLOBAL
@@ -825,32 +1082,57 @@
   document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
     adminKey = loadAdminKey();
+    try { lang = localStorage.getItem("kernelnews_lang") || "es"; } catch (e) {}
     try {
       const u = localStorage.getItem("kernelnews_user");
       if (u) currentUser = JSON.parse(u);
     } catch (e) {}
+    loadTheme();
     applyAuthUI();
+    ["fTitle","fContent","fCategory","fMinutes","fImage","fExcerpt"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", autoSave);
+    });
     fetchGlobal().then(() => {
       lucide.createIcons();
       applyAuthUI();
       setSection("descubrir");
+      renderSubscription();
     });
   });
 
+  function saveDraftNow() {
+    autoSave();
+    showDraftStatus("Borrador guardado");
+  }
+
   function topicIcon(t) { return (t && t.icon) ? t.icon.trim() : ""; }
   function topicName(t) { return typeof t === "string" ? t : t.name; }
+  function topicSubs(t) { return (t && Array.isArray(t.subtopics)) ? t.subtopics : []; }
 
   function renderTopics() {
     const list = document.getElementById("topicsList");
-    list.innerHTML = topics.map(t =>
-      `<button data-topic="${escapeAttr(topicName(t))}" onclick="setTopic('${escapeAttr(topicName(t))}')"
-         class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
+    list.innerHTML = topics.map(t => {
+      const subs = topicSubs(t);
+      const subtopicHtml = (subs.length && activeTopic === topicName(t))
+        ? subs.map(s => `
+            <button data-topic="${escapeAttr(topicName(t))}" data-subtopic="${escapeAttr(s)}"
+              onclick="setSubtopic('${escapeAttr(topicName(t))}','${escapeAttr(s)}')"
+              class="subtopic-item nav-item flex w-full items-center gap-2 rounded-lg py-1.5 pl-9 pr-3 text-[13px] font-medium text-black/50 hover:text-[#0071E3]">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 opacity-50"><path d="M5 12h14"/></svg>
+              <span class="truncate">${s}</span>
+            </button>`).join("")
+        : "";
+      return `
+        <button data-topic="${escapeAttr(topicName(t))}" onclick="setTopic('${escapeAttr(topicName(t))}')"
+          class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium text-[#1d1d1f]">
           ${topicIcon(t)
             ? `<i class="${topicIcon(t)} w-[17px] text-center text-[15px] text-black/40"></i>`
             : `<i data-lucide="hash" class="h-[17px] w-[17px]"></i>`}
           <span class="truncate">${topicName(t)}</span>
-       </button>`
-    ).join("");
+        </button>
+        ${subtopicHtml}`;
+    }).join("");
     lucide.createIcons();
   }
 
@@ -881,16 +1163,18 @@
   function setSection(sec) {
     activeSection = sec;
     activeTopic = "";
+    activeSubtopic = "";
     clearActive();
     const btn = document.querySelector(`#sidebar .nav-item[data-id="${sec}"]`);
     if (btn) btn.classList.add("active-pill");
     document.getElementById("heroSection").style.display = (sec === "descubrir") ? "block" : "none";
-    document.getElementById("mainSubtitle").textContent = {
+    document.getElementById("mainSubtitle").textContent = ({
       descubrir: "Lo último del ecosistema Apple Developer.",
       noticias: "Todas las publicaciones, de la más reciente a la más antigua.",
       marcadores: "Las noticias que has guardado para leer más tarde.",
-      eventos: "Descubre en esta página todos los futuros eventos de las grandes tecnologicas."
-    }[sec];
+      eventos: "Descubre en esta página todos los futuros eventos de las grandes tecnologicas.",
+      borradores: "Tus borradores guardados automáticamente."
+    })[sec] || "";
     if (sec === "eventos") { renderEventsSection(); return; }
     renderNews();
   }
@@ -1126,11 +1410,23 @@
 
   function setTopic(t) {
     activeTopic = t;
+    activeSubtopic = "";
     activeSection = "";
     clearActive();
     document.querySelector(`#sidebar .nav-item[data-topic="${t}"]`)?.classList.add("active-pill");
     document.getElementById("heroSection").style.display = "none";
     document.getElementById("mainSubtitle").textContent = `Artículos sobre ${t}.`;
+    renderTopics();
+    renderNews();
+  }
+  function setSubtopic(t, s) {
+    activeTopic = t;
+    activeSubtopic = s;
+    activeSection = "";
+    clearActive();
+    document.querySelector(`#sidebar .subtopic-item[data-subtopic="${s}"]`)?.classList.add("active-pill");
+    document.getElementById("heroSection").style.display = "none";
+    document.getElementById("mainSubtitle").textContent = `${t} · ${s}`;
     renderNews();
   }
 
@@ -1139,11 +1435,17 @@
   // ============================================================
   function filteredNews() {
     let list = [...news];
-    if (activeSection === "marcadores") {
-      const marks = JSON.parse(localStorage.getItem("kernelnews_marks") || "[]");
-      list = list.filter(n => marks.includes(n.id));
+    const isAdmin = currentUser && currentUser.role === "administrador";
+    if (activeSubtopic) {
+      list = list.filter(n => n.subtopic === activeSubtopic);
     } else if (activeTopic) {
       list = list.filter(n => n.category === activeTopic);
+    } else if (activeSection === "marcadores") {
+      const marks = JSON.parse(localStorage.getItem("kernelnews_marks") || "[]");
+      list = list.filter(n => marks.includes(n.id));
+    }
+    if (activeSection !== "borradores" || !isAdmin) {
+      list = list.filter(n => !n.draft);
     }
     const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
     if (q) list = list.filter(n =>
@@ -1348,6 +1650,9 @@
     const isAdmin = currentUser && currentUser.role === "administrador";
     if (isAdmin) { banner.classList.remove("hidden"); banner.classList.add("flex"); openAdmin("noticias"); }
     else { banner.classList.add("hidden"); banner.classList.remove("flex"); }
+    const dnav = document.getElementById("draftsNav");
+    if (dnav) dnav.classList.toggle("hidden", !isAdmin);
+    if (dnav) dnav.classList.toggle("flex", !!isAdmin);
   }
 
   // OAuth preparado (se puede sustituir por redirect real)
@@ -1473,25 +1778,69 @@
 
   function renderTopicsModal() {
     const list = document.getElementById("topicsManageList");
-    list.innerHTML = topics.map(t => `
-      <div class="flex items-center justify-between gap-2 rounded-lg bg-[#f5f5f7] px-3 py-2">
-        <span class="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#1d1d1f]">
-          ${topicIcon(t)
-            ? `<i class="${topicIcon(t)} w-5 text-center text-[15px] text-black/50"></i>`
-            : `<i data-lucide="hash" class="h-4 w-4 shrink-0 text-black/40"></i>`}
-          <span class="truncate">${topicName(t)}</span>
-        </span>
-        <div class="flex shrink-0 items-center gap-1">
-          <button onclick="openTopicEdit('${escapeAttr(topicName(t))}')" class="grid h-7 w-7 place-items-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-[#0071E3]" title="Editar tema">
-            <i data-lucide="pencil" class="h-4 w-4"></i>
+    list.innerHTML = topics.map(t => {
+      const subs = topicSubs(t);
+      const subsHtml = (subs.length ? subs.map(s => `
+        <div class="flex items-center justify-between gap-2 py-1 pl-9">
+          <span class="min-w-0 truncate text-[12px] text-black/55"><span class="mr-1 text-black/30">└</span>${escapeHtml(s)}</span>
+          <button onclick="removeSubtopic('${escapeAttr(topicName(t))}','${escapeAttr(s)}')" class="grid h-5 w-5 shrink-0 place-items-center rounded-full text-red-400 hover:bg-red-50" title="Eliminar subtema">
+            <i data-lucide="x" class="h-3 w-3"></i>
           </button>
-          <button onclick="removeTopic('${escapeAttr(topicName(t))}')" class="grid h-7 w-7 place-items-center rounded-full text-red-500 hover:bg-red-50" title="Eliminar tema">
-            <i data-lucide="trash-2" class="h-4 w-4"></i>
-          </button>
+        </div>`).join("") : "")
+      + `
+        <div class="mt-1 flex items-center gap-1.5 pl-9">
+          <input id="subInp_${escapeAttr(topicName(t))}" placeholder="${t("subtemas")}..." value=""
+            class="w-full min-w-0 rounded-lg border border-black/10 bg-white px-2 py-1 text-[12px] outline-none focus:border-[#0071E3]"
+            onkeydown="if(event.key==='Enter'){addSubtopic('${escapeAttr(topicName(t))}')}" />
+          <button onclick="addSubtopic('${escapeAttr(topicName(t))}')" class="shrink-0 rounded-lg bg-[#0071E3] px-2 py-1 text-[11px] font-semibold text-white hover:bg-[#0077ED]" title="Añadir subtema">+</button>
+        </div>`;
+      return `
+      <div class="rounded-lg bg-[#f5f5f7] px-3 py-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#1d1d1f]">
+            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#0071E3]/10 text-[#0071E3]"><i data-lucide="folder" class="h-3.5 w-3.5"></i></span>
+            <span class="truncate">${topicName(t)}</span>
+          </span>
+          <div class="flex shrink-0 items-center gap-1">
+            <button onclick="openTopicEdit('${escapeAttr(topicName(t))}')" class="grid h-7 w-7 place-items-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-[#0071E3]" title="Editar tema">
+              <i data-lucide="pencil" class="h-4 w-4"></i>
+            </button>
+            <button onclick="removeTopic('${escapeAttr(topicName(t))}')" class="grid h-7 w-7 place-items-center rounded-full text-red-500 hover:bg-red-50" title="Eliminar tema">
+              <i data-lucide="trash-2" class="h-4 w-4"></i>
+            </button>
+          </div>
         </div>
-      </div>
-    `).join("");
+        <div class="mt-1 space-y-0.5">${subsHtml}</div>
+      </div>`;
+    }).join("");
     lucide.createIcons();
+  }
+  function addSubtopic(topic, st) {
+    const k = "subInp_" + topic;
+    const val = (document.getElementById(k) || {}).value || "";
+    const name = val.trim() || st;
+    if (!name) return;
+    const idx = topics.findIndex(x => topicName(x) === topic);
+    if (idx === -1) return;
+    const t = topics[idx];
+    const arr = topicSubs(t);
+    if (arr.includes(name)) return;
+    t.subtopics = [...arr, name];
+    topics[idx] = t;
+    persistTopics();
+    renderTopicsModal();
+    renderTopics();
+  }
+  function removeSubtopic(topic, sub) {
+    const idx = topics.findIndex(x => topicName(x) === topic);
+    if (idx === -1) return;
+    const t = topics[idx];
+    t.subtopics = topicSubs(t).filter(s => s !== sub);
+    topics[idx] = t;
+    persistTopics();
+    renderTopicsModal();
+    renderTopics();
+    if (activeSubtopic === sub) { activeSubtopic = ""; renderNews(); }
   }
 
   function openTopicEdit(name) {
@@ -1678,6 +2027,7 @@
     }
 
     news.unshift({ id: Date.now(), title, category, minutes, date: "Recién publicado", excerpt, content, image, featured });
+    clearDraft();
     persistAll();
     closeCreateModal();
     activeSection = "noticias"; activeTopic = "";
