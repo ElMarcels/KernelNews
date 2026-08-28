@@ -1,0 +1,14 @@
+{
+  "name": "kernelnews",
+  "version": "1.0.0",
+  "description": "KernelNews - plataforma de noticias de Apple Developer con backend Postgres (Neon) en Vercel",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  },
+  "devDependencies": {}
+}
