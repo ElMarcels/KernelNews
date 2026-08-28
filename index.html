@@ -354,7 +354,10 @@
         class="rounded-full bg-[#0071E3] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Guardar clave</button>
       <button onclick="testAdminKey()"
         class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Probar</button>
+      <button onclick="setupTables()"
+        class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Crear tablas</button>
     </div>
+    <p id="setupStatus" class="mt-1 text-[11px] text-black/40"></p>
 
     <p class="mt-4 text-[12px] text-black/45">El usuario administrador está definido como <code class="rounded bg-black/[0.06] px-1 text-[12px]">@<span id="adminUsername"></span></code>.</p>
 
@@ -1407,6 +1410,28 @@
     } catch (e) {
       showAlert("No se pudo conectar con el servidor.");
     }
+  }
+  function setupTables() {
+    const key = document.getElementById("adminKeyInput").value.trim() || adminKey;
+    const st = document.getElementById("setupStatus");
+    if (!key) { showAlert("Introduce la ADMIN_KEY para crear las tablas."); return; }
+    if (st) st.textContent = "Creando tablas...";
+    fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-key": key },
+      body: JSON.stringify({ action: "setup" })
+    })
+      .then(async (res) => {
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.error || res.statusText);
+        showAlert("Tablas creadas correctamente.");
+        if (st) st.textContent = "Listo.";
+        fetchGlobal();
+      })
+      .catch((e) => {
+        showAlert("No se pudieron crear: " + e.message);
+        if (st) st.textContent = "";
+      });
   }
   function resetGlobal() {
     showConfirm("¿Restablecer TODO el contenido para TODOS los usuarios? Se borrarán noticias, temas y eventos actuales de la base de datos y se restaurarán los datos por defecto.", async () => {
