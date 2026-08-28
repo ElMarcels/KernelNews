@@ -326,21 +326,47 @@
   </div>
 </div>
 
-<!-- ================= SETTINGS (OAuth) MODAL ================= -->
+<!-- ================= SETTINGS (ADMIN) MODAL ================= -->
 <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
   <div class="modal-backdrop absolute inset-0" onclick="closeSettings()"></div>
-  <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl show">
+  <div class="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl show">
     <div class="flex items-center justify-between">
       <h3 class="text-[20px] font-bold text-[#1d1d1f]">Configuración del Administrador</h3>
       <button onclick="closeSettings()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
         <i data-lucide="x" class="h-4 w-4"></i>
       </button>
     </div>
+
     <div class="mt-4 rounded-xl bg-[#f5f5f7] p-4 text-[13px] leading-relaxed text-black/70">
-      <p class="mb-2 font-semibold text-[#1d1d1f]">Autenticación GitHub OAuth</p>
-      <p>Para activar el panel de control en producción, configura un GitHub OAuth App y añade tus <code class="rounded bg-black/[0.06] px-1 text-[12px]">GITHUB_CLIENT_ID</code> y <code class="rounded bg-black/[0.06] px-1 text-[12px]">GITHUB_CLIENT_SECRET</code> como variables de entorno en Vercel, con callback a <code class="rounded bg-black/[0.06] px-1 text-[12px]">/api/auth</code>.</p>
+      <p class="mb-1 font-semibold text-[#1d1d1f]">Contenido global</p>
+      <p>El contenido vive en una base de datos Postgres (Neon) y es <strong>compartido por todos los usuarios</strong>. Los cambios que hagas como administrador se aplican para todo el mundo al instante. Tus datos <strong>no</strong> se guardan ya en el navegador.</p>
     </div>
+
+    <div class="mt-4">
+      <label class="mb-1 block text-[12px] font-semibold text-black/60">Clave de administrador (ADMIN_KEY)</label>
+      <input id="adminKeyInput" type="password" value=""
+        class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 font-mono text-[13px] outline-none focus:border-[#0071E3]"
+        placeholder="Pega tu ADMIN_KEY de Vercel" />
+      <p id="adminKeyStatus" class="mt-1 text-[11px] text-black/40"></p>
+    </div>
+    <div class="mt-3 flex items-center gap-2">
+      <button onclick="saveAdminKey()"
+        class="rounded-full bg-[#0071E3] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Guardar clave</button>
+      <button onclick="testAdminKey()"
+        class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Probar</button>
+    </div>
+
     <p class="mt-4 text-[12px] text-black/45">El usuario administrador está definido como <code class="rounded bg-black/[0.06] px-1 text-[12px]">@<span id="adminUsername"></span></code>.</p>
+
+    <div class="mt-5 border-t border-black/[0.08] pt-4">
+      <p class="mb-2 text-[13px] font-semibold text-red-600">Zona de peligro</p>
+      <button onclick="resetGlobal()"
+        class="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-red-300 bg-red-50 py-2.5 text-[13px] font-semibold text-red-600 hover:bg-red-100">
+        <i data-lucide="rotate-ccw" class="h-4 w-4"></i> Restablecer todo para todos (datos por defecto)
+      </button>
+      <p class="mt-1.5 text-[11px] text-black/40">Borra en la base de datos las noticias, temas y eventos actuales y restaura los originales por defecto para todos los usuarios.</p>
+    </div>
+
     <div class="mt-5 flex justify-end">
       <button onclick="closeSettings()" class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Entendido</button>
     </div>
@@ -665,23 +691,29 @@
   // ============================================================
   //  ESTADO
   // ============================================================
-  let news = loadNews();
+  let news = seedNews;
+  let topics = JSON.parse(JSON.stringify(defaultTopics));
+  let events = seedEvents;
   let currentUser = null;      // { username, role }
   let activeSection = "descubrir";
   let activeTopic = "";
+  let adminKey = "";           // clave de administrador (backend)
+  let backendOnline = false;
 
   // ============================================================
-  //  PERSISTENCIA
+  //  PERSISTENCIA LOCAL + BACKEND GLOBAL
+  //  El contenido vive en Neon (Postgres) via /api/content.
+  //  localStorage se usa SOLO como caché/fallback offline.
   // ============================================================
-  function loadNews() {
+  const API_URL = "/api/content";
+
+  function loadLSnews() {
     try {
       const s = localStorage.getItem("kernelnews_news");
       return s ? JSON.parse(s) : [...seedNews];
     } catch (e) { return [...seedNews]; }
   }
-  function saveNews() { localStorage.setItem("kernelnews_news", JSON.stringify(news)); }
-
-  function loadTopics() {
+  function loadLStopics() {
     try {
       const s = localStorage.getItem("kernelnews_topics");
       const raw = s ? JSON.parse(s) : null;
@@ -689,34 +721,113 @@
       return raw.map(t => typeof t === "string" ? { name: t, icon: "" } : t);
     } catch (e) { return JSON.parse(JSON.stringify(defaultTopics)); }
   }
-  function saveTopics() { localStorage.setItem("kernelnews_topics", JSON.stringify(topics)); }
-  let topics = loadTopics();
-
-  function topicIcon(t) { return (t && t.icon) ? t.icon.trim() : ""; }
-  function topicName(t) { return typeof t === "string" ? t : t.name; }
-
-  function loadEvents() {
+  function loadLSevents() {
     try {
       const s = localStorage.getItem("kernelnews_events");
       return s ? JSON.parse(s) : [...seedEvents];
     } catch (e) { return [...seedEvents]; }
   }
-  function saveEvents() { localStorage.setItem("kernelnews_events", JSON.stringify(events)); }
-  let events = loadEvents();
+  function loadAdminKey() {
+    try { return localStorage.getItem("kernelnews_admin_key") || ""; } catch (e) { return ""; }
+  }
+  function persistLocalCache() {
+    try {
+      localStorage.setItem("kernelnews_news", JSON.stringify(news));
+      localStorage.setItem("kernelnews_topics", JSON.stringify(topics));
+      localStorage.setItem("kernelnews_events", JSON.stringify(events));
+    } catch (e) {}
+  }
 
-  // ============================================================
-  //  ICONOS + INIT
-  // ============================================================
-  document.addEventListener("DOMContentLoaded", () => {
-    lucide.createIcons();
+  function persistAll() {
+    persistLocalCache();
+    syncGlobal(false);
+  }
+  function persistTopics() { persistAll(); }
+  function persistEvents() { persistAll(); }
+  function persistNews() { persistAll(); }
+
+  function applyGlobal(data) {
+    if (data && Array.isArray(data.noticias)) news = data.noticias;
+    if (data && Array.isArray(data.temas)) topics = data.temas;
+    if (data && Array.isArray(data.eventos)) events = data.eventos;
+    persistLocalCache();
     renderTopics();
     fillCategoryOptions();
     renderNews();
     renderEventsSection();
-    applyAuthUI();
-    setSection("descubrir");
     renderAdmin();
+    if (document.querySelector("#adminBanner") && !document.querySelector("#adminBanner").classList.contains("hidden")) {
+      if (document.getElementById("topicsModal") && !document.getElementById("topicsModal").classList.contains("hidden")) renderTopicsModal();
+      if (document.getElementById("eventsModal") && !document.getElementById("eventsModal").classList.contains("hidden")) renderEventsModal();
+    }
+  }
+
+  async function fetchGlobal() {
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error("API no disponible");
+      const data = await res.json();
+      if (data && data.error) throw new Error(data.error);
+      backendOnline = true;
+      applyGlobal(data);
+      return true;
+    } catch (e) {
+      backendOnline = false;
+      // Fallback: usar caché local
+      news = loadLSnews(); topics = loadLStopics(); events = loadLSevents();
+      persistLocalCache();
+      renderTopics(); fillCategoryOptions(); renderNews(); renderEventsSection(); renderAdmin();
+      return false;
+    }
+  }
+
+  async function syncGlobal(showMsg) {
+    if (!currentUser || currentUser.role !== "administrador") return;
+    if (!adminKey) {
+      if (showMsg) showAlert("Configura tu ADMIN_KEY en Ajustes para guardar los cambios globalmente.");
+      return;
+    }
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({
+          action: "sync",
+          noticias: news,
+          temas: topics,
+          eventos: events
+        })
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || res.statusText);
+      }
+      const data = await res.json();
+      applyGlobal(data);
+      if (showMsg) showAlert("Cambios guardados para todos.");
+    } catch (e) {
+      showAlert("No se pudo guardar globalmente: " + e.message);
+    }
+  }
+
+  // Inicialización: restaura sesión, intenta cargar el backend, si no usa caché local
+  document.addEventListener("DOMContentLoaded", () => {
+    lucide.createIcons();
+    adminKey = loadAdminKey();
+    try {
+      const u = localStorage.getItem("kernelnews_user");
+      if (u) currentUser = JSON.parse(u);
+    } catch (e) {}
+    applyAuthUI();
+    fetchGlobal().then(() => {
+      lucide.createIcons();
+      applyAuthUI();
+      setSection("descubrir");
+    });
   });
+
+  function topicIcon(t) { return (t && t.icon) ? t.icon.trim() : ""; }
+  function topicName(t) { return typeof t === "string" ? t : t.name; }
 
   function renderTopics() {
     const list = document.getElementById("topicsList");
@@ -985,7 +1096,7 @@
     } else {
       ev.posts.push({ id: Date.now(), title, content, image, date: new Date().toISOString() });
     }
-    saveEvents();
+    persistEvents();
     closeEventPostModal();
     renderEventPosts();
     lucide.createIcons();
@@ -997,7 +1108,7 @@
     if (!p) return;
     showConfirm(`¿Eliminar el post "${p.title}" del evento?`, () => {
       ev.posts = (ev.posts || []).filter(z => z.id !== pid);
-      saveEvents();
+      persistEvents();
       renderEventPosts();
     }, { title: "Eliminar post" });
   }
@@ -1259,8 +1370,69 @@
   }
 
   // ---- Ajustes ----
-  function openSettings() { renderAdmin(); document.getElementById("settingsModal").classList.remove("hidden"); document.getElementById("settingsModal").classList.add("flex"); }
+  function openSettings() {
+    renderAdmin();
+    if (document.getElementById("adminKeyInput")) document.getElementById("adminKeyInput").value = adminKey;
+    updateAdminKeyStatus();
+    document.getElementById("settingsModal").classList.remove("hidden");
+    document.getElementById("settingsModal").classList.add("flex");
+  }
   function closeSettings() { document.getElementById("settingsModal").classList.add("hidden"); document.getElementById("settingsModal").classList.remove("flex"); }
+
+  function updateAdminKeyStatus() {
+    const el = document.getElementById("adminKeyStatus");
+    if (!el) return;
+    if (adminKey) {
+      el.textContent = "Clave guardada. Lista para guardar cambios globales.";
+      el.className = "mt-1 text-[11px] text-[#0071E3]";
+    } else {
+      el.textContent = "Sin clave. Los cambios no se aplicarán para todos.";
+      el.className = "mt-1 text-[11px] text-red-500";
+    }
+  }
+  function saveAdminKey() {
+    const v = document.getElementById("adminKeyInput").value.trim();
+    adminKey = v;
+    try { localStorage.setItem("kernelnews_admin_key", v); } catch (e) {}
+    updateAdminKeyStatus();
+    showAlert(v ? "Clave administrador guardada." : "Clave vacía. Se ha eliminado.");
+  }
+  async function testAdminKey() {
+    const key = document.getElementById("adminKeyInput").value.trim() || adminKey;
+    if (!key) { showAlert("Introduce la ADMIN_KEY para probarla."); return; }
+    try {
+      const res = await fetch(API_URL + "/ping", { headers: { "x-admin-key": key } });
+      const d = await res.json().catch(() => ({}));
+      showAlert(res.ok ? d.msg || "Clave válida." : (d.error || "Clave inválida."));
+    } catch (e) {
+      showAlert("No se pudo conectar con el servidor.");
+    }
+  }
+  function resetGlobal() {
+    showConfirm("¿Restablecer TODO el contenido para TODOS los usuarios? Se borrarán noticias, temas y eventos actuales de la base de datos y se restaurarán los datos por defecto.", async () => {
+      news = JSON.parse(JSON.stringify(seedNews));
+      topics = JSON.parse(JSON.stringify(defaultTopics));
+      events = JSON.parse(JSON.stringify(seedEvents));
+      persistLocalCache();
+      if (!adminKey) { showAlert("Configura la ADMIN_KEY en Ajustes para aplicar el restablecimiento global."); renderTopics(); fillCategoryOptions(); renderNews(); renderEventsSection(); return; }
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+          body: JSON.stringify({ action: "sync", noticias: news, temas: topics, eventos: events })
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.error || res.statusText);
+        }
+        const data = await res.json();
+        applyGlobal(data);
+        showAlert("Contenido restablecido para todos.");
+      } catch (e) {
+        showAlert("No se pudo restablecer globalmente: " + e.message);
+      }
+    }, { title: "Restablecer para todos" });
+  }
 
   // ---- Temas ----
   function openTopicsModal() { renderTopicsModal(); document.getElementById("topicsModal").classList.remove("hidden"); document.getElementById("topicsModal").classList.add("flex"); }
@@ -1325,7 +1497,7 @@
       return;
     }
     topics[idx] = { name, icon };
-    saveTopics();
+    persistTopics();
     closeTopicEdit();
     renderTopics();
     fillCategoryOptions();
@@ -1340,7 +1512,7 @@
     if (!name) return;
     if (topics.some(t => topicName(t) === name)) { showAlert("Ese tema ya existe."); return; }
     topics.push({ name, icon });
-    saveTopics();
+    persistTopics();
     document.getElementById("newTopicInput").value = "";
     document.getElementById("newTopicIcon").value = "fa-solid fa-";
     renderTopics();
@@ -1350,7 +1522,7 @@
   function removeTopic(name) {
     showConfirm(`¿Eliminar el tema "${name}" de la barra lateral?`, () => {
       topics = topics.filter(t => topicName(t) !== name);
-      saveTopics();
+      persistTopics();
       renderTopics();
       fillCategoryOptions();
       renderTopicsModal();
@@ -1399,7 +1571,7 @@
     const image = document.getElementById("evImgInp").value.trim()
       || "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=900&q=80";
     events.push({ id: Date.now(), title, date, time, location, type, description, image });
-    saveEvents();
+    persistEvents();
     closeCreateEventModal();
     renderEventsModal();
     renderEventsSection();
@@ -1409,7 +1581,7 @@
     if (!ev) return;
     showConfirm(`¿Eliminar el evento "${ev.title}"?`, () => {
       events = events.filter(e => e.id !== id);
-      saveEvents();
+      persistEvents();
       renderEventsModal();
       if (activeSection === "eventos") renderEventsSection();
     }, { title: "Eliminar evento" });
@@ -1465,7 +1637,7 @@
       const idx = news.findIndex(x => x.id === editId);
       if (idx === -1) return;
       news[idx] = { ...news[idx], title, category, minutes, image, excerpt, content, featured };
-      saveNews();
+      persistAll();
       closeCreateModal();
       if (activeSection === "descubrir") renderNews();
       else renderNews();
@@ -1473,7 +1645,7 @@
     }
 
     news.unshift({ id: Date.now(), title, category, minutes, date: "Recién publicado", excerpt, content, image, featured });
-    saveNews();
+    persistAll();
     closeCreateModal();
     activeSection = "noticias"; activeTopic = "";
     clearActive();
@@ -1488,7 +1660,7 @@
     if (!n) return;
     showConfirm(`¿Eliminar la noticia "${n.title}"? Esta acción no se puede deshacer.`, () => {
       news = news.filter(x => x.id !== id);
-      saveNews();
+      persistAll();
       const marks = getMarks().filter(m => m !== id);
       setMarks(marks);
       renderNews();
