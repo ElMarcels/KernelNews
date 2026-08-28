@@ -1401,7 +1401,7 @@
     const key = document.getElementById("adminKeyInput").value.trim() || adminKey;
     if (!key) { showAlert("Introduce la ADMIN_KEY para probarla."); return; }
     try {
-      const res = await fetch(API_URL + "/ping", { headers: { "x-admin-key": key } });
+      const res = await fetch("/api/ping", { headers: { "x-admin-key": key } });
       const d = await res.json().catch(() => ({}));
       showAlert(res.ok ? d.msg || "Clave válida." : (d.error || "Clave inválida."));
     } catch (e) {
