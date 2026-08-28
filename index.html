@@ -530,6 +530,43 @@
   </div>
 </div>
 
+<!-- ================= EVENT POST MODAL ================= -->
+<div id="eventPostModal" class="fixed inset-0 z-[55] hidden items-center justify-center p-4">
+  <div class="modal-backdrop absolute inset-0" onclick="closeEventPostModal()"></div>
+  <div class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl show">
+    <div class="flex items-center justify-between">
+      <h3 id="eppTitle" class="text-[20px] font-bold text-[#1d1d1f]">Nuevo Post del Evento</h3>
+      <button onclick="closeEventPostModal()" class="grid h-8 w-8 place-items-center rounded-full hover:bg-black/[0.05]">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    <form id="eventPostForm" class="mt-5 space-y-4" onsubmit="submitEventPost(event)">
+      <input type="hidden" id="eppId" />
+      <div>
+        <label class="mb-1 block text-[12px] font-semibold text-black/60">Título</label>
+        <input id="eppTitleInput" required
+          class="w-full rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 text-[14px] outline-none focus:border-[#0071E3]"
+          placeholder="Título del post" />
+      </div>
+      <div>
+        <div class="mb-1 flex items-center justify-between">
+          <label class="block text-[12px] font-semibold text-black/60">Contenido (Markdown)</label>
+          <span class="text-[11px] text-black/35"># encabezados · **negrita** · `código`</span>
+        </div>
+        <textarea id="eppContentInput" rows="6"
+          class="w-full resize-y rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2.5 font-mono text-[13px] leading-relaxed outline-none focus:border-[#0071E3]"
+          placeholder="Escribe el post en Markdown..."></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeEventPostModal()"
+          class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/10">Cancelar</button>
+        <button id="eppSubmit" type="submit"
+          class="rounded-full bg-[#0071E3] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#0077ED]">Publicar Post</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ================= CONFIRM / ALERT MODAL ================= -->
 <div id="confirmModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
   <div class="modal-backdrop absolute inset-0" onclick="cancelConfirm()"></div>
@@ -753,15 +790,17 @@
     } catch (e) { return iso; }
   }
 
+  let activeEventId = null;
   function openEvent(id) {
     const ev = events.find(x => x.id === id);
     if (!ev) return;
+    activeEventId = id;
     if (!document.getElementById("eventModal")) {
       const el = document.createElement("div");
       el.id = "eventModal"; el.className = "fixed inset-0 z-50 hidden items-center justify-center p-4";
       el.innerHTML = `
         <div class="modal-backdrop absolute inset-0" onclick="closeEvent()"></div>
-        <div class="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl show">
+        <div class="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl show">
           <img id="evImage" class="h-44 w-full object-cover" />
           <button onclick="closeEvent()" class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/90 shadow">
             <i data-lucide="x" class="h-4 w-4"></i>
@@ -777,7 +816,15 @@
               <i data-lucide="map-pin" class="h-4 w-4 text-[#0071E3]"></i>
               <span id="evLoc"></span>
             </div>
-            <button onclick="closeEvent()" class="mt-5 w-full rounded-full bg-[#0071E3] py-2.5 text-[14px] font-semibold text-white hover:bg-[#0077ED]">Interesado</button>
+            <div class="mt-5 border-t border-black/[0.08] pt-4">
+              <div class="mb-2 flex items-center justify-between">
+                <h4 class="text-[15px] font-bold text-[#1d1d1f]">Posts del evento</h4>
+                <button id="evAddPost" onclick="openEventPostModal()" class="hidden items-center gap-1 rounded-full bg-[#0071E3] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-[#0077ED]">
+                  <i data-lucide="plus" class="h-3 w-3"></i> Nuevo Post
+                </button>
+              </div>
+              <div id="evPosts" class="space-y-2"></div>
+            </div>
           </div>
         </div>`;
       document.body.appendChild(el);
@@ -785,16 +832,109 @@
     document.getElementById("evImage").src = ev.image;
     document.getElementById("evTitle").textContent = ev.title;
     document.getElementById("evType").textContent = ev.type;
-    document.getElementById("evMeta").textContent = `${formatEventDate(ev.date)} · ${ev.time}`;
+    document.getElementById("evMeta").textContent = `${formatEventDate(ev.date)} · ${ev.time} · ${ev.location}`;
     document.getElementById("evDesc").textContent = ev.description;
     document.getElementById("evLoc").textContent = ev.location;
     const m = document.getElementById("eventModal");
     m.classList.remove("hidden"); m.classList.add("flex");
+    renderEventPosts();
     lucide.createIcons();
   }
   function closeEvent() {
     const m = document.getElementById("eventModal");
     if (m) { m.classList.add("hidden"); m.classList.remove("flex"); }
+    activeEventId = null;
+  }
+
+  function getEventPosts(ev) { return ev.posts || []; }
+  function renderEventPosts() {
+    if (activeEventId == null) return;
+    const ev = events.find(x => x.id === activeEventId);
+    if (!ev) return;
+    const box = document.getElementById("evPosts");
+    const posts = getEventPosts(ev);
+    const isAdmin = !!(currentUser && currentUser.role === "administrador");
+    const addBtn = document.getElementById("evAddPost");
+    if (addBtn) { addBtn.classList.toggle("hidden", !isAdmin); addBtn.classList.toggle("flex", isAdmin); }
+
+    if (!posts.length) {
+      box.innerHTML = `<p class="py-4 text-center text-[13px] text-black/40">${isAdmin ? "Aún no hay posts. Crea el primero." : "Este evento aún no tiene publicaciones."}</p>`;
+      return;
+    }
+    box.innerHTML = posts.map(p => `
+      <div class="rounded-xl bg-[#f5f5f7] p-3.5">
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-[14px] font-semibold text-[#1d1d1f]">${p.title}</p>
+          ${isAdmin ? `
+          <div class="flex shrink-0 items-center gap-1">
+            <button onclick="openEventPostModal(${JSON.stringify(p.id)})" class="grid h-6 w-6 place-items-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-[#0071E3]" title="Editar post">
+              <i data-lucide="pencil" class="h-3.5 w-3.5"></i>
+            </button>
+            <button onclick="deleteEventPost(${JSON.stringify(p.id)})" class="grid h-6 w-6 place-items-center rounded-full text-red-500 hover:bg-red-50" title="Eliminar post">
+              <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+            </button>
+          </div>` : ""}
+        </div>
+        <div class="md-body mt-1.5 text-[13px] text-black/60">${renderMarkdown(p.content || "")}</div>
+      </div>
+    `).join("");
+    if (box.querySelectorAll("a").length) lucide.createIcons();
+  }
+
+  function openEventPostModal(postId) {
+    if (!currentUser || currentUser.role !== "administrador") return;
+    const modal = document.getElementById("eventPostModal");
+    const form = document.getElementById("eventPostForm");
+    form.reset();
+    document.getElementById("eppId").value = "";
+    document.getElementById("eppTitle").textContent = "Nuevo Post del Evento";
+    document.getElementById("eppSubmit").textContent = "Publicar Post";
+    if (postId != null) {
+      const ev = events.find(x => x.id === activeEventId);
+      const p = (ev && getEventPosts(ev).find(z => z.id === postId));
+      if (p) {
+        document.getElementById("eppId").value = p.id;
+        document.getElementById("eppTitleInput").value = p.title;
+        document.getElementById("eppContentInput").value = p.content || "";
+        document.getElementById("eppTitle").textContent = "Editar Post del Evento";
+        document.getElementById("eppSubmit").textContent = "Guardar cambios";
+      }
+    }
+    modal.classList.remove("hidden"); modal.classList.add("flex");
+  }
+  function closeEventPostModal() { document.getElementById("eventPostModal").classList.add("hidden"); document.getElementById("eventPostModal").classList.remove("flex"); }
+
+  function submitEventPost(e) {
+    e.preventDefault();
+    if (activeEventId == null) return;
+    const ev = events.find(x => x.id === activeEventId);
+    if (!ev) return;
+    if (!ev.posts) ev.posts = [];
+    const title = document.getElementById("eppTitleInput").value.trim();
+    const content = document.getElementById("eppContentInput").value.trim() || title;
+    const pid = parseInt(document.getElementById("eppId").value);
+
+    if (pid) {
+      const idx = ev.posts.findIndex(p => p.id === pid);
+      if (idx !== -1) { ev.posts[idx].title = title; ev.posts[idx].content = content; }
+    } else {
+      ev.posts.push({ id: Date.now(), title, content, date: new Date().toISOString() });
+    }
+    saveEvents();
+    closeEventPostModal();
+    renderEventPosts();
+    lucide.createIcons();
+  }
+  function deleteEventPost(pid) {
+    if (!currentUser || currentUser.role !== "administrador") return;
+    const ev = events.find(x => x.id === activeEventId);
+    const p = ev && getEventPosts(ev).find(z => z.id === pid);
+    if (!p) return;
+    showConfirm(`¿Eliminar el post "${p.title}" del evento?`, () => {
+      ev.posts = (ev.posts || []).filter(z => z.id !== pid);
+      saveEvents();
+      renderEventPosts();
+    }, { title: "Eliminar post" });
   }
 
   function setTopic(t) {
