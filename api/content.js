@@ -1,6 +1,8 @@
-import { sql } from "@vercel/postgres";
+import { Pool } from "@neondatabase/serverless";
 
-// Se ejecuta en el runtime de Node en Vercel (compatible con @vercel/postgres)
+// Conexión a la base de datos Neon. En Vercel, la variable de entorno
+// se llama DATABASE_URL (o la que hayas configurado).
+const pool = new Pool({ connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL });
 
 function isAdmin(req) {
   try {
@@ -20,9 +22,9 @@ function respond(status, body) {
 
 async function getAll() {
   const [n, t, e] = await Promise.all([
-    sql`select id, title, category, minutes, date, excerpt, content, image, featured from noticias order by created_at desc`,
-    sql`select name, icon, orden from temas order by orden asc, name asc`,
-    sql`select id, title, date, time, location, type, description, image, posts from eventos order by created_at desc`,
+    pool.query(`select id, title, category, minutes, date, excerpt, content, image, featured from noticias order by created_at desc`),
+    pool.query(`select name, icon, orden from temas order by orden asc, name asc`),
+    pool.query(`select id, title, date, time, location, type, description, image, posts from eventos order by created_at desc`),
   ]);
 
   const noticias = n.rows.map((r) => ({ ...r, featured: !!r.featured }));
@@ -37,41 +39,48 @@ async function getAll() {
 
 async function doSync(body) {
   const { noticias, temas, eventos } = body;
-  await sql`begin`;
+  const client = await pool.connect();
   try {
-    await sql`delete from noticias`;
-    await sql`delete from temas`;
-    await sql`delete from eventos`;
+    await client.query("begin");
+    await client.query("delete from noticias");
+    await client.query("delete from temas");
+    await client.query("delete from eventos");
 
     if (Array.isArray(noticias)) {
       for (const n of noticias) {
-        await sql`
-          insert into noticias (title, category, minutes, date, excerpt, content, image, featured)
-          values (${n.title || ""}, ${n.category || ""}, ${n.minutes || 1}, ${n.date || ""}, ${n.excerpt || ""}, ${n.content || ""}, ${n.image || ""}, ${!!n.featured})
-        `;
+        await client.query(
+          `insert into noticias (title, category, minutes, date, excerpt, content, image, featured)
+           values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [n.title || "", n.category || "", n.minutes || 1, n.date || "", n.excerpt || "", n.content || "", n.image || "", !!n.featured]
+        );
       }
     }
     if (Array.isArray(temas)) {
       let orden = 0;
       for (const t of temas) {
-        await sql`
-          insert into temas (name, icon, orden)
-          values (${typeof t === "string" ? t : t.name}, ${typeof t === "string" ? "" : t.icon || ""}, ${orden++})
-        `;
+        const name = typeof t === "string" ? t : t.name;
+        const icon = typeof t === "string" ? "" : t.icon || "";
+        await client.query(
+          `insert into temas (name, icon, orden) values ($1, $2, $3)`,
+          [name, icon, orden++]
+        );
       }
     }
     if (Array.isArray(eventos)) {
       for (const e of eventos) {
-        await sql`
-          insert into eventos (title, date, time, location, type, description, image, posts)
-          values (${e.title || ""}, ${e.date || ""}, ${e.time || ""}, ${e.location || ""}, ${e.type || ""}, ${e.description || ""}, ${e.image || ""}, ${JSON.stringify(e.posts || [])})
-        `;
+        await client.query(
+          `insert into eventos (title, date, time, location, type, description, image, posts)
+           values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [e.title || "", e.date || "", e.time || "", e.location || "", e.type || "", e.description || "", e.image || "", JSON.stringify(e.posts || [])]
+        );
       }
     }
-    await sql`commit`;
+    await client.query("commit");
   } catch (err) {
-    await sql`rollback`;
+    await client.query("rollback");
     throw err;
+  } finally {
+    client.release();
   }
   return getAll();
 }
