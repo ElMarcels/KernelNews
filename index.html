@@ -750,9 +750,17 @@
   function persistNews() { persistAll(); }
 
   function applyGlobal(data) {
-    if (data && Array.isArray(data.noticias)) news = data.noticias;
+    if (data && Array.isArray(data.noticias)) {
+      news = data.noticias.map(n => ({ ...n, id: Number(n.id) }));
+    }
     if (data && Array.isArray(data.temas)) topics = data.temas;
-    if (data && Array.isArray(data.eventos)) events = data.eventos;
+    if (data && Array.isArray(data.eventos)) {
+      events = data.eventos.map(e => ({
+        ...e,
+        id: Number(e.id),
+        posts: (e.posts || []).map(p => ({ ...p, id: Number(p.id) }))
+      }));
+    }
     persistLocalCache();
     renderTopics();
     fillCategoryOptions();
